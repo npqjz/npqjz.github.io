@@ -1,0 +1,8 @@
+import BrowserView from '@site/src/components/BroswerView'
+import CodeBlock from '@theme/CodeBlock'
+import MyComponentSource from '!!raw-loader!@site/src/components/BroswerView'
+import test from '!!raw-loader!@site/.CPP/test.cpp'
+
+<BrowserView>
+  <CodeBlock language="cpp">{test}</CodeBlock>
+</BrowserView>

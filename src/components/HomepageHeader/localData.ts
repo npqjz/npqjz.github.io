@@ -1,0 +1,1 @@
+export const homeSlogan = "进入文档😅🤣😇"

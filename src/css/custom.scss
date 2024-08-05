@@ -1,0 +1,131 @@
+/**
+ * Any CSS included here will be global. The classic template
+ * bundles Infima by default. Infima is a CSS framework designed to
+ * work well for content-centric websites.
+ */
+
+/* You can override the default Infima variables here. */
+@import '@arco-design/web-react/dist/css/arco.css';
+@import './var.scss';
+@import './common.scss';
+
+:root {
+  --ifm-color-primary: #2e7385;
+  --ifm-color-primary-dark: #296878;
+  --ifm-color-primary-darker: #276271;
+  --ifm-color-primary-darkest: #20515d;
+  --ifm-color-primary-light: #337f92;
+  --ifm-color-primary-lighter: #358499;
+  --ifm-color-primary-lightest: #3c96ad;
+  --ifm-font-size-base: 102%;
+  --ifm-font-size-base-code: 80%;
+  --ifm-line-height-base: 1.65;
+  --ifm-color-background-color-list: rgba(255, 255, 255, 0.5);
+  --ifm-font-family-base: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+  --font-color: #333;
+  --font-color-outline: #fff;
+  --ifm-color-background: #f5f5dc; /* 白天模式背景颜色 */
+  --ifm-navbar-background-color: #f5f5dc;
+  --ifm-footer-background-color: #f5f5dc;
+  --ifm-color-background-other: #f2f2c6;
+  --ifm-navbar-link-custom-color: var(--ifm-color-primary-dark);
+  --docusaurus-highlighted-code-line-bg: rgb(180, 189, 213);
+}
+
+/* 在深色模式下，为了可读性，你应该选择一个较浅的调色板。 */
+[data-theme='dark'] {
+  --ifm-color-primary: #25c2a0;
+  --ifm-color-primary-dark: #21af90;
+  --ifm-color-primary-darker: #1fa588;
+  --ifm-color-primary-darkest: #1a8870;
+  --ifm-color-primary-light: #29d5b0;
+  --ifm-color-primary-lighter: #32d8b4;
+  --ifm-color-primary-lightest: #4fddbf;
+  --ifm-color-background-color-list: rgba(0, 0, 0, 0.5);
+  --font-color: #fff;
+  --font-color-outline: #333;
+  --ifm-color-background--dark: #0f172a; /* 夜间模式背景颜色 */
+  --ifm-navbar-background-color: #0f172a;
+  --ifm-footer-background-color: #0f172a;
+  --ifm-color-background-dark-other: #0e1421;
+  --docusaurus-highlighted-code-line-bg: rgb(100, 100, 100);
+  --ifm-navbar-link-custom-color: var(--ifm-color-primary-dark);
+  --ifm-transition-timing-default: cubic-bezier(0.08, 0.52, 0.52, 1);
+  --ifm-transition-fast: 200ms;
+}
+
+@for $i from 1 through 4 {
+  :root {
+    --ifm-color-wave-#{$i}: rgba(245, 245, 220, #{calc($i * 25 / 100)});
+  }
+  [data-theme='dark'] {
+    --ifm-color-wave-#{$i}: rgba(15, 23, 42, #{calc($i * 25 / 100)});
+  }
+}
+
+.code-block-error-line {
+  background-color: #ff000020;
+  display: block;
+  margin: 0 calc(-1 * var(--ifm-pre-padding));
+  padding: 0 var(--ifm-pre-padding);
+  border-left: 3px solid #ff000080;
+}
+
+* {
+  font: var(--ifm-font-size-base) / var(--ifm-line-height-base) var(--ifm-font-family-base);
+  // font-size: var(--font-size-base);
+}
+
+code {
+  font: var(--ifm-font-size-base-code) / var(--ifm-line-height-base) var(--ifm-font-family-base) !important;
+  // font-size: var(--font-size-base);
+}
+
+/* 白天模式 */
+html[data-theme='light'] {
+  background-color: var(--ifm-color-background);
+}
+
+/* 夜间模式 */
+html[data-theme='dark'] {
+  background-color: var(--ifm-color-background--dark);
+}
+
+html[data-theme='light'] {
+  background: var(--ifm-color-background); /* Fallback for browsers that don't support gradients */
+  background: linear-gradient(135deg, var(--ifm-color-background) 25%, var(--ifm-color-background-other) 25%, var(--ifm-color-background) 50%, var(--ifm-color-background-other) 50%, var(--ifm-color-background) 75%, var(--ifm-color-background-other) 75%, var(--ifm-color-background-other));
+  background-size: 40px 40px;
+
+  /* Animation */
+  animation: move 4s linear infinite;
+}
+
+html[data-theme='dark'] {
+  /* Basic dimensions and centering */
+
+  /* Dark mode colors and gradient */
+  background: var(--ifm-color-background--dark); /* Fallback for browsers that don't support gradients */
+  background: linear-gradient(
+    135deg,
+    var(--ifm-color-background--dark) 25%,
+    var(--ifm-color-background-dark-other) 25%,
+    var(--ifm-color-background--dark) 50%,
+    var(--ifm-color-background-dark-other) 50%,
+    var(--ifm-color-background--dark) 75%,
+    var(--ifm-color-background-dark-other) 75%,
+    var(--ifm-color-background-dark-other)
+  );
+  background-size: 40px 40px;
+
+  /* Animation */
+  animation: move 4s linear infinite;
+}
+
+@keyframes move {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 40px 40px;
+  }
+}

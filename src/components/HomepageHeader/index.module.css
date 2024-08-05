@@ -1,0 +1,154 @@
+/**
+ * CSS files with the .module.css suffix will be treated as CSS modules
+ * and scoped locally.
+ */
+
+.heroBanner {
+  padding: 4rem 0;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  transition: 0.5s ease-in-out;
+}
+
+@media screen and (max-width: 996px) {
+  .heroBanner {
+    padding: 2rem;
+  }
+}
+
+.buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.link-btn {
+  font-family: feizhai;
+}
+
+.container {
+  position: relative;
+  /* 让背景图层铺满整个容器，且由上至下铺满整个容器 */
+  background: url('@site/static/img/miku.jpg') no-repeat center -130px;
+}
+
+
+/* From Uiverse.io by mrhyddenn */
+.button {
+  display: flex;
+
+}
+
+.box {
+  width: 2.5rem;
+  height: 3rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  transition: all .8s;
+  cursor: pointer;
+  position: relative;
+  background: var(--ifm-color-primary);
+  overflow: hidden;
+  opacity: .7;
+}
+
+
+.box:before {
+  content: "立";
+  position: absolute;
+  top: 0;
+  background: var(--ifm-color-primary-darkest);
+
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(100%);
+  transition: transform .4s;
+}
+
+.box:nth-child(1) {
+  border-radius: 3px 0 0 3px;
+}
+
+.box:last-child {
+  border-radius: 0 3px 3px 0;
+}
+
+
+
+.box:nth-child(2)::before {
+  transform: translateY(-100%);
+  content: '即';
+}
+
+.box:nth-child(3)::before {
+  content: '游';
+}
+
+.box:nth-child(4)::before {
+  transform: translateY(-100%);
+  content: '玩';
+}
+
+.box:nth-child(5)::before {
+  content: '🤪';
+}
+
+.box:nth-child(6)::before {
+  transform: translateY(-100%);
+  content: '🤗';
+}
+
+.box:nth-child(7)::before {
+  content: '😭';
+}
+
+
+.button:hover .box:before {
+  transform: translateY(0);
+}
+
+
+.toolTip {
+  display: absolute;
+  right: 2rem;
+
+
+}
+
+.toolList {
+  list-style: none;
+
+
+}
+
+.toolItem {
+  transition: all .3s;
+}
+
+.toolItem:nth-child(1) {
+  position: absolute;
+  right: 2rem;
+  top: 1rem;
+  font-size: var(--font-size-h1);
+}
+
+.toolItem:nth-child(2) {
+  position: absolute;
+  right: 2rem;
+  top: 3rem;
+  font-size: var(--font-size-h1);
+}
+
+.toolIcon:hover {
+  color: var(--ifm-color-primary-darkest);
+  cursor: pointer;
+}
+
