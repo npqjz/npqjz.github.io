@@ -1,1 +1,0 @@
-"use strict";(self.webpackChunkblog_from_jz=self.webpackChunkblog_from_jz||[]).push([[580],{8925:o=>{o.exports=JSON.parse('{"metadata":{"permalink":"/npqjz.github.io/blog","page":1,"postsPerPage":10,"totalPages":1,"totalCount":4,"blogDescription":"Blog","blogTitle":"Blog"}}')}}]);
