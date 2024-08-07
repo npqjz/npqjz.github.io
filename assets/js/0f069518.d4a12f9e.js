@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkblog_from_jz=self.webpackChunkblog_from_jz||[]).push([[8238],{34950:e=>{e.exports=JSON.parse('{"tag":{"label":"Releases","permalink":"/docs/tags/releases","allTagsPath":"/docs/tags","count":1,"items":[{"id":"subject/DS/ds","title":"\u6570\u636e\u7ed3\u6784","description":"Content","permalink":"/docs/subject/DS/"}],"unlisted":false}}')}}]);
