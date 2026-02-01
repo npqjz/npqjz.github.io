@@ -1,0 +1,659 @@
+# 题目 41 - 题目 48
+
+## 41. Vue 项目如何进行部署？是否有遇到部署服务器后刷新 404 问题？
+
+```js showLineNumbers title="服务器配置"
+server {
+  listen  80;
+  server_name  www.xxx.com;
+
+  location / {
+    index  /data/dist/index.html;
+  }
+}
+```
+
+```js showLineNumbers title="重启nginx"
+// 检查配置是否正确
+nginx -t
+
+// 平滑重启
+nginx -s reload
+```
+
+404 问题
+
+### 为什么 history 模式下有问题
+
+Vue 是属于单页应用（single-page application）
+
+而 SPA 是一种网络应用程序或网站的模型，所有用户交互是通过动态重写当前页面，前面我们也看到了，不管我们应用有多少页面，构建物都只会产出一个 index.html
+
+现在，我们回头来看一下我们的 nginx 配置
+
+```js showLineNumbers title="测试代码"
+server {
+  listen  80;
+  server_name  www.xxx.com;
+
+  location / {
+    index  /data/dist/index.html;
+  }
+}
+```
+
+可以根据 nginx 配置得出，当我们在地址栏输入 www.xxx.com 时，这时会打开我们 dist 目录下的 index.html 文件，然后我们在跳转路由进入到 www.xxx.com/login
+
+关键在这里，当我们在 website.com/login 页执行刷新操作，nginx location 是没有相关配置的，所以就会出现 404 的情况
+
+### 为什么 hash 模式下没有问题
+
+router hash 模式我们都知道是用符号#表示的，如 website.com/#/login, hash 的值为 #/login
+
+它的特点在于：hash 虽然出现在 URL 中，但不会被包括在 HTTP 请求中，对服务端完全没有影响，因此改变 hash 不会重新加载页面
+
+hash 模式下，仅 hash 符号之前的内容会被包含在请求中，如 website.com/#/login 只有 website.com 会被包含在请求中 ，因此对于服务端来说，即使没有配置 location，也不会返回 404 错误
+
+### 解决方案
+
+```js showLineNumbers title="测试代码"
+server {
+  listen  80;
+  server_name  www.xxx.com;
+
+  location / {
+    index  /data/dist/index.html;
+    try_files $uri $uri/ /index.html;
+  }
+}
+```
+
+```js showLineNumbers title="配置更新"
+nginx -s reload
+```
+
+## 42. Vue 项目中如何解决跨域问题？
+
+### CORS
+
+CORS （Cross-Origin Resource Sharing，跨域资源共享）是一个系统，它由一系列传输的 HTTP 头组成，这些 HTTP 头决定浏览器是否阻止前端 JavaScript 代码获取跨域请求的响应
+
+CORS 实现起来非常方便，只需要增加一些 HTTP 头，让服务器能声明允许的访问来源
+
+只要后端实现了 CORS，就实现了跨域
+
+```js showLineNumbers title="测试代码"
+app.use(async (ctx, next) => {
+  ctx.set('Access-Control-Allow-Origin', '*')
+  ctx.set('Access-Control-Allow-Headers', 'Content-Type, Content-Length, Authorization, Accept, X-Requested-With , yourHeaderFeild')
+  ctx.set('Access-Control-Allow-Methods', 'PUT, POST, GET, DELETE, OPTIONS')
+  if (ctx.method == 'OPTIONS') {
+    ctx.body = 200
+  } else {
+    await next()
+  }
+})
+```
+
+Proxy
+
+代理（Proxy）也称网络代理，是一种特殊的网络服务，允许一个（一般为客户端）通过这个服务与另一个网络终端（一般为服务器）进行非直接的连接。一些网关、路由器等网络设备具备网络代理功能。一般认为代理服务有利于保障网络终端的隐私或安全，防止攻击
+
+```js showLineNumbers title="vue-cli"
+amodule.exports = {
+  devServer: {
+    host: '127.0.0.1',
+    port: 8084,
+    open: true, // vue项目启动时自动打开浏览器
+    proxy: {
+      '/api': {
+        // '/api'是代理标识，用于告诉node，url前面是/api的就是使用代理的
+        target: 'http://xxx.xxx.xx.xx:8080', //目标地址，一般是指后台服务器地址
+        changeOrigin: true, //是否跨域
+        pathRewrite: {
+          // pathRewrite 的作用是把实际Request Url中的'/api'用""代替
+          '^/api': ''
+        }
+      }
+    }
+  }
+}
+```
+
+```js showLineNumbers title="expressl框架"
+var express = require('express')
+const proxy = require('http-proxy-middleware')
+const app = express()
+app.use(express.static(__dirname + '/'))
+app.use('/api', proxy({ target: 'http://localhost:4000', changeOrigin: false }))
+module.exports = app
+```
+
+```js showLineNumbers title="nignx"
+server {
+    listen    80;
+    # server_name www.josephxia.com;
+    location / {
+        root  /var/www/html;
+        index  index.html index.htm;
+        try_files $uri $uri/ /index.html;
+    }
+    location /api {
+        proxy_pass  http://127.0.0.1:3000;
+        proxy_redirect   off;
+        proxy_set_header  Host       $host;
+        proxy_set_header  X-Real-IP     $remote_addr;
+        proxy_set_header  X-Forwarded-For  $proxy_add_x_forwarded_for;
+    }
+}
+```
+
+## 43.Vue 怎么实现权限管理？控制到按钮级别的权限怎么做？
+
+- 路由方面，用户登录后只能看到自己有权访问的导航菜单，也只能访问自己有权访问的路由地址，否则将跳转 4xx 提示页
+
+- 视图方面，用户只能看到自己有权浏览的内容和有权操作的控件
+
+- 最后再加上请求控制作为最后一道防线，路由可能配置失误，按钮可能忘了加权限，这种时候请求控制可以用来兜底，越权请求将在前端被拦截
+
+### 接口权限
+
+接口权限目前一般采用 jwt 的形式来验证，没有通过的话一般返回 401，跳转到登录页面重新进行登录
+
+登录完拿到 token，将 token 存起来，通过 axios 请求拦截器进行拦截，每次请求的时候头部携带 token
+
+```js showLineNumbers title="测试代码"
+axios.interceptors.request.use(config => {
+    config.headers['token'] = cookie.get('token')
+    return config
+})
+axios.interceptors.response.use(res=>{},{response}=>{
+    if (response.data.code === 40099 || response.data.code === 40098) { //token过期或者错误
+        router.push('/login')
+    }
+})
+```
+
+### 路由权限控制
+
+1. 初始化即挂载全部路由，并且在路由上标记相应的权限信息，每次路由跳转前做校验
+
+```js showLineNumbers title="测试代码"
+const routerMap = [
+  {
+    path: '/permission',
+    component: Layout,
+    redirect: '/permission/index',
+    alwaysShow: true, // will always show the root menu
+    meta: {
+      title: 'permission',
+      icon: 'lock',
+      roles: ['admin', 'editor'] // you can set roles in root nav
+    },
+    children: [
+      {
+        path: 'page',
+        component: () => import('@/views/permission/page'),
+        name: 'pagePermission',
+        meta: {
+          title: 'pagePermission',
+          roles: ['admin'] // or you can only set roles in sub nav
+        }
+      },
+      {
+        path: 'directive',
+        component: () => import('@/views/permission/directive'),
+        name: 'directivePermission',
+        meta: {
+          title: 'directivePermission'
+          // if do not set roles, means: this page does not require permission
+        }
+      }
+    ]
+  }
+]
+```
+
+方案二
+
+初始化的时候先挂载不需要权限控制的路由，比如登录页，404 等错误页。如果用户通过 URL 进行强制访问，则会直接进入 404，相当于从源头上做了控制
+
+登录后，获取用户的权限信息，然后筛选有权限访问的路由，在全局路由守卫里进行调用 addRoutes 添加路由
+
+```js showLineNumbers title="测试代码"
+import router from './router'
+import store from './store'
+import { Message } from 'element-ui'
+import NProgress from 'nprogress' // progress bar
+import 'nprogress/nprogress.css' // progress bar style
+import { getToken } from '@/utils/auth' // getToken from cookie
+
+NProgress.configure({ showSpinner: false }) // NProgress Configuration
+
+// permission judge function
+function hasPermission(roles, permissionRoles) {
+  if (roles.indexOf('admin') >= 0) return true // admin permission passed directly
+  if (!permissionRoles) return true
+  return roles.some(role => permissionRoles.indexOf(role) >= 0)
+}
+
+const whiteList = ['/login', '/authredirect'] // no redirect whitelist
+
+router.beforeEach((to, from, next) => {
+  NProgress.start() // start progress bar
+  if (getToken()) {
+    // determine if there has token
+    /* has token*/
+    if (to.path === '/login') {
+      next({ path: '/' })
+      NProgress.done() // if current page is dashboard will not trigger	afterEach hook, so manually handle it
+    } else {
+      if (store.getters.roles.length === 0) {
+        // 判断当前用户是否已拉取完user_info信息
+        store
+          .dispatch('GetUserInfo')
+          .then(res => {
+            // 拉取user_info
+            const roles = res.data.roles // note: roles must be a array! such as: ['editor','develop']
+            store.dispatch('GenerateRoutes', { roles }).then(() => {
+              // 根据roles权限生成可访问的路由表
+              router.addRoutes(store.getters.addRouters) // 动态添加可访问路由表
+              next({ ...to, replace: true }) // hack方法 确保addRoutes已完成 ,set the replace: true so the navigation will not leave a history record
+            })
+          })
+          .catch(err => {
+            store.dispatch('FedLogOut').then(() => {
+              Message.error(err || 'Verification failed, please login again')
+              next({ path: '/' })
+            })
+          })
+      } else {
+        // 没有动态改变权限的需求可直接next() 删除下方权限判断 ↓
+        if (hasPermission(store.getters.roles, to.meta.roles)) {
+          next() //
+        } else {
+          next({ path: '/401', replace: true, query: { noGoBack: true } })
+        }
+        // 可删 ↑
+      }
+    }
+  } else {
+    /* has no token*/
+    if (whiteList.indexOf(to.path) !== -1) {
+      // 在免登录白名单，直接进入
+      next()
+    } else {
+      next('/login') // 否则全部重定向到登录页
+      NProgress.done() // if current page is login will not trigger afterEach hook, so manually handle it
+    }
+  }
+})
+
+router.afterEach(() => {
+  NProgress.done() // finish progress bar
+})
+```
+
+### 菜单权限
+
+方案一
+
+菜单与路由分离，菜单由后端返回
+
+前端定义路由信息
+
+```js showLineNumbers title="测试代码"
+{
+    name: "login",
+    path: "/login",
+    component: () => import("@/pages/Login.vue")
+}
+```
+
+```js showLineNumbers title="测试代码"
+function hasPermission(router, accessMenu) {
+  if (whiteList.indexOf(router.path) !== -1) {
+    return true
+  }
+  let menu = Util.getMenuByName(router.name, accessMenu)
+  if (menu.name) {
+    return true
+  }
+  return false
+}
+
+Router.beforeEach(async (to, from, next) => {
+  if (getToken()) {
+    let userInfo = store.state.user.userInfo
+    if (!userInfo.name) {
+      try {
+        await store.dispatch('GetUserInfo')
+        await store.dispatch('updateAccessMenu')
+        if (to.path === '/login') {
+          next({ name: 'home_index' })
+        } else {
+          //Util.toDefaultPage([...routers], to.name, router, next);
+          next({ ...to, replace: true }) //菜单权限更新完成,重新进一次当前路由
+        }
+      } catch (e) {
+        if (whiteList.indexOf(to.path) !== -1) {
+          // 在免登录白名单，直接进入
+          next()
+        } else {
+          next('/login')
+        }
+      }
+    } else {
+      if (to.path === '/login') {
+        next({ name: 'home_index' })
+      } else {
+        if (hasPermission(to, store.getters.accessMenu)) {
+          Util.toDefaultPage(store.getters.accessMenu, to, routes, next)
+        } else {
+          next({ path: '/403', replace: true })
+        }
+      }
+    }
+  } else {
+    if (whiteList.indexOf(to.path) !== -1) {
+      // 在免登录白名单，直接进入
+      next()
+    } else {
+      next('/login')
+    }
+  }
+  let menu = Util.getMenuByName(to.name, store.getters.accessMenu)
+  Util.title(menu.title)
+})
+
+Router.afterEach(to => {
+  window.scrollTo(0, 0)
+})
+```
+
+方案二
+
+菜单和路由都由后端返回
+
+前端统一定义路由组件
+
+```js showLineNumbers title="测试代码"
+const Home = () => import('../pages/Home.vue')
+const UserInfo = () => import('../pages/UserInfo.vue')
+export default {
+  home: Home,
+  userInfo: UserInfo
+}
+```
+
+后端路由组件返回以下格式
+
+```json showLineNumbers title="测试代码"
+[
+  {
+    "name": "home",
+    "path": "/",
+    "component": "home"
+  },
+  {
+    "name": "home",
+    "path": "/userinfo",
+    "component": "userInfo"
+  }
+]
+```
+
+### 按钮权限
+
+方案一
+
+按钮权限也可以用 v-if 判断
+
+但是如果页面过多，每个页面页面都要获取用户权限 role 和路由表里的 meta.btnPermissions，然后再做判断
+
+这种方式就不展开举例了
+
+方案二
+
+通过自定义指令进行按钮权限的判断
+
+首先配置路由
+
+```js showLineNumbers title="测试代码"
+{
+    path: '/permission',
+    component: Layout,
+    name: '权限测试',
+    meta: {
+        btnPermissions: ['admin', 'supper', 'normal']
+    },
+    //页面需要的权限
+    children: [{
+        path: 'supper',
+        component: _import('system/supper'),
+        name: '权限测试页',
+        meta: {
+            btnPermissions: ['admin', 'supper']
+        } //页面需要的权限
+    },
+    {
+        path: 'normal',
+        component: _import('system/normal'),
+        name: '权限测试页',
+        meta: {
+            btnPermissions: ['admin']
+        } //页面需要的权限
+    }]
+}
+```
+
+自定义权限鉴定指令
+
+```js showLineNumbers title="测试代码"
+import Vue from 'vue'
+/**权限指令**/
+const has = Vue.directive('has', {
+  bind: function (el, binding, vnode) {
+    // 获取页面按钮权限
+    let btnPermissionsArr = []
+    if (binding.value) {
+      // 如果指令传值，获取指令参数，根据指令参数和当前登录人按钮权限做比较。
+      btnPermissionsArr = Array.of(binding.value)
+    } else {
+      // 否则获取路由中的参数，根据路由的btnPermissionsArr和当前登录人按钮权限做比较。
+      btnPermissionsArr = vnode.context.$route.meta.btnPermissions
+    }
+    if (!Vue.prototype.$_has(btnPermissionsArr)) {
+      el.parentNode.removeChild(el)
+    }
+  }
+})
+// 权限检查方法
+Vue.prototype.$_has = function (value) {
+  let isExist = false
+  // 获取用户按钮权限
+  let btnPermissionsStr = sessionStorage.getItem('btnPermissions')
+  if (btnPermissionsStr == undefined || btnPermissionsStr == null) {
+    return false
+  }
+  if (value.indexOf(btnPermissionsStr) > -1) {
+    isExist = true
+  }
+  return isExist
+}
+export { has }
+```
+
+## 44. Vue 中的 diff 算法
+
+它具有两个特点：只会在同层级进行比较，不会跨层级比较；在比较的过程中，循环从两边向中间收拢。
+
+1. 比较新旧 VNode 节点：如果新旧节点相同，则不做任何操作；如果新旧节点都不存在子节点，则直接结束比较；如果新旧节点都有子节点，则进入 updateChildren 函数比较子节点。
+2. 更新子节点：在 updateChildren 函数中，设置新旧 VNode 的头尾指针，然后从两边向中间比较。如果新旧头尾指针相同，则直接 patchVnode；如果新旧头尾指针不同，则根据情况调用 patchVnode、createElm 创建新节点，或者从哈希表寻找 key 一致的旧 VNode 节点再进行分情况操作。
+3. patchVnode 方法：如果新旧节点都有文本节点且不相等，则设置真实 dom 的文本节点为新节点的文本节点；如果旧节点有子节点而新节点没有，则删除旧节点的子节点；如果旧节点没有子节点而新节点有，则将新节点的子节点真实化后添加到旧节点；如果两者都有子节点，则进入 updateChildren 函数比较子节点。
+   通过 diff 算法，Vue 能够高效地比较新旧 VNode 节点，以决定如何更新真实 DOM，从而
+
+## 45.常见的修饰符有哪些
+
+根据每一个修饰符的功能，我们可以得到以下修饰符的应用场景：
+
+- .stop：阻止事件冒泡
+- .native：绑定原生事件
+- .once：事件只执行一次
+- .self ：将事件绑定在自身身上，相当于阻止事件冒泡
+- .prevent：阻止默认事件
+- .capture：用于事件捕获
+- .once：只触发一次
+- .keyCode：监听特定键盘按下
+- .right：右键
+
+## 46. Vue.observable 是什么
+
+:::info
+Vue.observable，让一个对象变成响应式数据。Vue 内部会用它来处理 data 函数返回的对象
+:::
+
+使用场景
+
+```js showLineNumbers title="测试代码"
+// 引入vue
+import Vue from 'vue
+// 创建state对象，使用observable让state对象可响应
+export let state = Vue.observable({
+  name: '张三',
+  'age': 38
+})
+// 创建对应的方法
+export let mutations = {
+  changeName(name) {
+    state.name = name
+  },
+  setAge(age) {
+    state.age = age
+  }
+}
+```
+
+```js showLineNumbers title="测试代码"
+<template>
+  <div>
+    姓名：{{ name }}
+    年龄：{{ age }}
+    <button @click="changeName('李四')">改变姓名</button>
+    <button @click="setAge(18)">改变年龄</button>
+  </div>
+</template>
+import { state, mutations } from '@/store'
+export default {
+  // 在计算属性中拿到值
+  computed: {
+    name() {
+      return state.name
+    },
+    age() {
+      return state.age
+    }
+  },
+  // 调用mutations里面的方法，更新数据
+  methods: {
+    changeName: mutations.changeName,
+    setAge: mutations.setAge
+  }
+}
+```
+
+45. 插槽是什么
+
+1. 默认插槽
+
+```js showLineNumbers title="Child"
+<template>
+  <slot>
+    <p>插槽后备的内容</p>
+  </slot>
+</template>
+```
+
+```js showLineNumbers title="Parent"
+<Child>
+  <div>默认插槽</div>
+</Child>
+```
+
+2. 具名插槽
+
+```js showLineNumbers title="Child"
+<template>
+  <slot>插槽后备的内容</slot>
+  <slot name="content">插槽后备的内容</slot>
+</template>
+```
+
+```js showLineNumbers title="Parents"
+<child>
+    <template v-slot:default>具名插槽</template>
+    <!-- 具名插槽⽤插槽名做参数 -->
+    <template v-slot:content>内容...</template>
+</child>
+```
+
+3. 作用域插槽
+
+```js showLineNumbers title="Child"
+<template>
+  <slot name="footer" testProps="子组件的值">
+    <h3>没传footer插槽</h3>
+  </slot>
+</template>
+```
+
+```js showLineNumbers title="Parents"
+<child>
+    <!-- 把v-slot的值指定为作⽤域上下⽂对象 -->
+    <template v-slot:default="slotProps">
+      来⾃⼦组件数据：{{slotProps.testProps}}
+    </template>
+  <template #default="slotProps">
+      来⾃⼦组件数据：{{slotProps.testProps}}
+    </template>
+</child>
+```
+
+- v-slot 属性只能在`<template>`上使用，但在只有默认插槽时可以在组件标签上使用
+- 默认插槽名为 default，可以省略 default 直接写 v-slot
+- 缩写为#时不能不写参数，写成#default
+- 可以通过解构获取 `v-slot={user}，还可以重命名 v-slot="{user: newName}"和定义默认值 v-slot="{user = '默认值'}"`
+
+## 47.NextTick 是什么
+
+:::info
+在下次 DOM 更新循环结束之后执行延迟回调。在修改数据之后立即使用这个方法，获取更新后的 DOM
+:::
+
+为什么要有 nexttick
+
+举个例子
+
+```js showLineNumbers title="测试代码"
+{
+  {
+    num
+  }
+}
+for (let i = 0; i < 100000; i++) {
+  num = i
+}
+```
+
+如果没有 nextTick 更新机制，那么 num 每次更新值都会触发视图更新(上面这段代码也就是会更新 10 万次视图)，有了 nextTick 机制，只需要更新一次，所以 nextTick 本质是一种优化策略
+
+## 48.Vue 实例挂载的过程中发生了什么？
+
+- 创建 Vue 实例：使用 new Vue()创建一个新的 Vue 实例，实例会接收一个配置对象，该对象包含了数据、方法、生命周期钩子等信息。
+- 合并选项：Vue 会合并用户传递的配置选项，包括 data、methods、props、computed 等，同时会处理如 mixins、extends 等高级选项。
+- 初始化数据响应式：Vue 使用 Object.defineProperty 或 Proxy 来将 data 中的属性转换为响应式，以便数据变化时能够自动更新视图。
+- 生命周期钩子：Vue 会调用 beforeCreate 钩子，在这个阶段，实例的数据和事件等属性还没有被创建。然后调用 created 钩子，在这个阶段，实例已经创建完成，可以访问和修改数据。
+- 挂载组件：如果配置了 el 属性，Vue 会调用$mount 方法将组件挂载到指定的 DOM 元素上。这个过程中，Vue 会编译模板、生成虚拟 DOM，并将虚拟 DOM 渲染到真实 DOM 上。
+- 渲染视图：Vue 的 render 方法会返回一个虚拟 DOM 树，\_update 方法会根据虚拟 DOM 树生成真实的 DOM 树，并替换旧的 DOM 树。
+- 更新视图：当数据变化时，Vue 会重新执行 render 方法，生成新的虚拟 DOM，并通过\_update 方法更新真实 DOM。
+- 销毁组件：当组件需要被销毁时，Vue 会调用 beforeDestroy 钩子，在这个阶段，实例仍然可以访问。然后调用 destroyed 钩子，在这个阶段，实例的数据和事件等属性已经被销毁，不能被访问。

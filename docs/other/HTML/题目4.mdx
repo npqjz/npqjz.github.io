@@ -1,0 +1,156 @@
+# 题目 16 - 题目 20
+
+## 16.什么是 SEO？
+
+SEO（Search Engine Optimization），汉译为搜索引擎优化。 <br />
+
+搜索引擎优化是一种利用搜索引擎的搜索规则来提高目前网站在有关搜索引擎内的自然排名的方式。 <br />
+
+SEO 是指为了从搜索引擎中获得更多的免费流量，从网站结构、内容建设方案、用户互动传播、页面等角度进行合理规划，使网站更适合搜索引擎的索引原则的行为。 <br />
+
+## 17.前端跨页面通信
+
+1. LocalStorage 或 SessionStorage：这两个 Web 存储 API 可以在不同页面之间共享数据。一个页面可以将数据存储在本地存储中，另一个页面则可以读取该数据并进行相应处理。通过监听 storage 事件，可以实现数据的实时更新。
+
+2. Cookies：使用 Cookies 也可以在不同页面之间传递数据。通过设置和读取 Cookie 值，可以在同一域名下的不同页面之间交换信息。
+
+3. PostMessage：window.postMessage() 方法允许从一个窗口向另一个窗口发送消息，并在目标窗口上触发 message 事件。通过指定目标窗口的 origin，可以确保只有特定窗口能够接收和处理消息。
+
+4. Broadcast Channel：Broadcast Channel API 允许在同一浏览器下的不同上下文（例如，在不同标签页或 iframe 中）之间进行双向通信。它提供了一个类似于发布-订阅模式的机制，通过创建一个广播频道，并在不同上下文中加入该频道，可以实现消息的广播和接收。
+
+5. SharedWorker：SharedWorker 是一个可由多个窗口或标签页共享的 Web Worker，它可以在不同页面之间进行跨页面通信。通过 SharedWorker，多个页面可以通过 postMessage 进行双向通信，并共享数据和执行操作。
+
+6. IndexedDB：IndexedDB 是浏览器提供的一个客户端数据库，可以在不同页面之间存储和共享数据。通过在一个页面中写入数据，另一个页面可以读取该数据。
+
+7. WebSockets：WebSockets 提供了全双工的、双向通信通道，可以在客户端和服务器之间进行实时通信。通过建立 WebSocket 连接，可以在不同页面之间通过服务器传递数据并实现实时更新。
+
+## 18.DNS 预解析是什么
+
+1. 减少 DNS 请求次数
+2. 缩短 DNS 解析时间 dns-prefetch
+
+   - dns-prefetch(DNS 预获取)是前端网络性能优化的一种措施。它根据浏览器定义的规则，提前解析之后可能会用到的域名，使解析结果缓存到系统缓存中，缩短 DNS 解析时间，进而提高网站的访问速度。
+   - 每当浏览器从（第三方）服务器发送一次请求时，都要先通过 DNS 解析将该跨域域名解析为 IP 地址，然后浏览器才能发出请求。 <br />
+
+     如果某一时间内，有多个请求都发送给同一个服务器，那么 DNS 解析会多次并且重复触发。这样会导致整体的网页加载有延迟的情况。 <br />
+
+     我们知道，虽然 DNS 解析占用不了多大带宽，但是它会产生很高的延迟，尤其是对于移动网络会更为明显。 <br />
+
+     因此，为了减少 DNS 解析产生的延迟，我们可以通过 dns-prefetch 预解析技术有效地缩短 DNS 解析时间。 <br />
+
+## 19.HTML 有哪些 drag 相关 API
+
+```js showLineNumbers title="测试代码"
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML5 Drag and Drop</title>
+    <style>
+        #drag-source {
+            width: 100px;
+            height: 100px;
+            background-color: lightblue;
+            margin: 20px;
+            text-align: center;
+            line-height: 100px;
+            cursor: move;
+        }
+        #drop-target {
+            width: 200px;
+            height: 200px;
+            background-color: lightgreen;
+            border: 2px dashed gray;
+            margin: 20px;
+            text-align: center;
+            line-height: 200px;
+        }
+    </style>
+</head>
+<body>
+    <div id="drag-source" draggable="true">Drag me</div>
+    <div id="drop-target">Drop here</div>
+
+    <script>
+        const dragSource = document.getElementById('drag-source');
+        const dropTarget = document.getElementById('drop-target');
+
+        // Drag start event
+        dragSource.addEventListener('dragstart', (event) => {
+            event.dataTransfer.setData('text/plain', 'Dragged data');
+        });
+
+        // Drag over event
+        dropTarget.addEventListener('dragover', (event) => {
+            event.preventDefault(); // Necessary to allow dropping
+            dropTarget.style.backgroundColor = 'lightyellow';
+        });
+
+        // Drag leave event
+        dropTarget.addEventListener('dragleave', () => {
+            dropTarget.style.backgroundColor = 'lightgreen';
+        });
+
+        // Drop event
+        dropTarget.addEventListener('drop', (event) => {
+            event.preventDefault();
+            dropTarget.style.backgroundColor = 'lightgreen';
+            const data = event.dataTransfer.getData('text/plain');
+            dropTarget.textContent = `Dropped: ${data}`;
+        });
+    </script>
+</body>
+</html>
+```
+
+1. 使元素可拖拽：
+
+   - 在需要拖拽的元素上设置 draggable="true" 属性。
+
+2. 处理拖拽事件：
+
+   - dragstart：当拖拽操作开始时触发。通常用于设置拖拽数据。
+   - drag：在拖拽过程中不断触发。用于提供实时反馈。
+   - dragend：拖拽操作结束时触发。用于清理或更新 UI。
+
+3. 处理拖拽目标：
+
+- dragenter：当拖拽元素进入目标区域时触发。
+- dragover：当拖拽元素悬停在目标区域上方时触发。必须调用 event.preventDefault() 才能接受拖拽。
+- dragleave：当拖拽元素离开目标区域时触发。
+- drop：当拖拽元素在目标区域放下时触发。用于处理放置逻辑。
+
+**关键点**
+
+- draggable 属性：使元素可以被拖拽。设置 draggable="true" 启用拖拽。
+- dataTransfer 对象：在 dragstart 事件中使用 event.dataTransfer 设置和获取拖拽数据。
+- preventDefault()：在 dragover 事件中调用 event.preventDefault() 允许放置操作。
+- 事件处理：通过监听不同的拖拽事件来实现自定义的拖拽行为。
+
+## 20.浏览器是如何对 HTML5 的离线存储进行管理和加载的
+
+- 在线的情况下，浏览器发现 html 头部有 manifest 属性，它会请求 manifest 文件，如果是第一次访问页面 ，那么浏览器就会根据 manifest 文件的内容下载相应的资源并且进行离线存储。如果已经访问过页面并且资源已经进行离线存储了，那么浏览器就会使用离线的资源加载页面，然后浏览器会对比新的 manifest 文件与旧的 manifest 文件，如果文件没有发生改变，就不做任何操作，如果文件改变了，就会重新下载文件中的资源并进行离线存储。
+- 离线的情况下，浏览器会直接使用离线存储的资源
+
+**原理：** HTML5 的离线存储是基于一个新建的 .appcache 文件的缓存机制(不是存储技术)，通过这个文件上的解析清单离线存储资源，这些资源就会像 cookie 一样被存储了下来。之后当网络在处于离线状态下时，浏览器会通过被离线存储的数据进行页面展示
+
+（1） 创建一个和 html 同名的 manifest 文件，然后在页面头部加入 manifest 属性： <br />
+
+```html showLineNumbers title="测试代码"
+<html lang="en" manifest="index.manifest"></html>
+```
+
+（2） 在 cache.manifest 文件的编写离线存储的资源文件： <br />
+
+```html showLineNumbers title="测试代码"
+CACHE MANIFEST <br />
+#v0.11 <br />
+CACHE: <br />
+js/app.js <br />
+css/style.css <br />
+NETWORK: <br />
+resourse/logo.png <br />
+FALLBACK: <br />
+/ /offline.html <br />
+```

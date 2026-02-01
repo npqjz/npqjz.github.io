@@ -1,0 +1,140 @@
+# 题目 11 - 题目 15
+
+## 11.SSG 的理解
+
+SSG（Static Site Generation，静态网站生成）是指在构建时预先生成静态页面，并将这些页面部署到 CDN 或者其他存储服务中，以提升 Web 应用的性能和用户体验。 <br />
+
+具体来说，SSG 的实现方式通常包括以下几个步骤：
+
+1. 在开发阶段，使用模板引擎等技术创建静态页面模板；
+2. 将需要展示的数据从后台 API 中获取或者通过其他渠道获取，并将其填充到静态页面模板中，生成完整的 HTML 页面；
+3. 使用构建工具（例如 Gatsby、Next.js 等）对静态页面进行构建，生成静态 HTML、CSS 和 JavaScript 文件；
+4. 部署生成好的静态文件到服务器或者 CDN 上，以供用户访问。 <br />
+
+相比于传统的动态网页，SSG 具有如下优势：
+
+1. 加载速度快：由于不需要每次请求都动态地渲染页面，SSG 可以减少页面加载时间，从而提高用户体验和搜索引擎排名；
+2. 安全性高：由于没有后台代码和数据库，SSG 不容易受到 SQL 注入等攻击；
+3. 成本低：由于不需要动态服务器等设备，SSG 可以降低网站的运维成本和服务器负担。 <br />
+
+需要注意的是，SSG 不适用于频繁更新的内容和动态交互等场景，但对于内容较为稳定和更新较少的网站则是一个性能优化的好选择
+
+## 12.Node 和 Element 是什么关系？
+
+Node 与 Element 的关系，从继承方面思考可能清晰很多。 <br />
+
+Element 继承于 Node，具有 Node 的方法，同时又拓展了很多自己的特有方法。 <br />
+
+在 Element 的一些方法里，是明确区分了 Node 和 Element 的。比如说：childNodes 与 children, parentNode 与 parentElement 等方法。 <br />
+
+Node 的一些方法，返回值为 Node，比如说文本节点，注释节点之类的，而 Element 的一些方法，返回值则一定是 Element。 <br />
+
+区分清楚这点了，也能避免很多低级问题。 <br />
+
+简单的说就是 Node 是一个基类，DOM 中的 Element，Text 和 Comment 都继承于它。换句话说，Element，Text 和 Comment 是三种特殊的 Node，它们分别叫做 ELEMENT_NODE,TEXT_NODE 和 COMMENT_NODE。 <br />
+
+所以我们平时使用的 html 上的元素，即 Element，是类型为 ELEMENT_NODE 的 Node。
+
+## 13.假设我要上传图片，怎么在选择图片后，通过浏览器预览待上传的图片？
+
+- 一种是用 window.URL.createObjectURl 方法对选择的图片数据（可以勉强理解为 input 的 value）生成一个 blob 对象路径
+
+```js showLineNumbers title="测试代码"
+function imgChange(img) {
+  document.querySelector('img').src = window.URL.cteateObejectURL(img.files[0])
+}
+```
+
+- 第二种是使用 FileReader 读取器
+
+1. 创建 FileReader 对像；
+2. 调用 readAsDataURL 方法读取文件；
+3. 调用 onload 事件监听。因为我们需要拿到完整的数据，但我们又不知道文件何时读完，所以需要第三步监听；
+4. 通过 FileReader 的 result 属性拿到读取结果。
+
+```js showLineNumbers title="测试代码"
+function imgChange(img) {
+  // 生成一个文件读取的对象
+  const reader = new FileReader()
+  reader.onload = function (ev) {
+    document.querySelector('img').src = imgFile
+  }
+  //发起异步读取文件请求，读取结果为data:url的字符串形式，
+  reader.readAsDataURL(img.files[0])
+}
+```
+
+## 14.渐进式 jpeg
+
+渐进式 JPEG（Progressive JPEG），即 PJPEG，是该标准的三种流行压缩模式之一。 <br />
+
+渐进式 JPEG 以特定方式压缩照片和图形，与基线 JPEG 不同，PJPEG 在 Web 浏览器中呈现时，会首先给出模糊图像的外观。然后一点一点地开始图片渲染，直到它显示完全渲染的图像。浏览器实际上是逐行解释图像，但在占位符中提供了完整图像的模糊预览。随着 Web 浏览器的渲染引擎处理数据，图像的对比度开始变得更清晰、更详细。直到最后渲染完毕，用户将看到完整的清晰图像。 <br />
+
+PJPEG 能够起到一种很有意义的心理效果，让用户有东西可看，而不必坐着干等大型图像慢慢显示在屏幕上。 <br />
+
+PJPEG 适用于大部分常用的浏览器，包括 Chrome、Firefox 和 Internet Explorer 9 及更高版本。旧版本的 Internet Explorer 在显示渐进式 JPEG 时存在一些问题，不过这只是很小一部分用户。而不支持渐进式 JPEG 格式的浏览器会像普通 JPEG 一样加载照片。 <br />
+
+## 15.怎么实现“点击回到顶部”的功能
+
+1. 锚点
+
+```html showLineNumbers title="测试代码"
+<body style="height:2000px;">
+  <div id="topAnchor"></div>
+  <a href="#topAnchor" style="position:fixed;right:0;bottom:0"> 回到顶部 </a>
+</body>
+```
+
+2. scrollTop
+
+```html showLineNumbers title="测试代码"
+<body style="height:2000px;">
+  <button id="test" style="position:fixed;right:0;bottom:0">回到顶部</button>
+  <script>
+    test.onclick = function () {
+      document.body.scrollTop = document.documentElement.scrollTop = 0
+    }
+  </script>
+</body>
+```
+
+3. scrollTop
+
+```js showLineNumbers title="测试代码"
+<body style="height:2000px;">
+    <button id="test" style="position:fixed;right:0;bottom:0">回到顶部</button>
+    <script>
+        test.onclick = function(){
+            scrollTo(0,0);
+        }
+    </script>
+</body>
+```
+
+4. scrollBy
+
+```html showLineNumbers title="测试代码"
+<body style="height:2000px;">
+  <button id="test" style="position:fixed;right:0;bottom:0">回到顶部</button>
+  <script>
+    test.onclick = function () {
+      var top = document.body.scrollTop || document.documentElement.scrollTop
+      scrollBy(0, -top)
+    }
+  </script>
+</body>
+```
+
+5. scrollIntoView
+
+```html showLineNumbers title="测试代码"
+<body style="height:2000px;">
+  <div id="target"></div>
+  <button id="test" style="position:fixed;right:0;bottom:0">回到顶部</button>
+  <script>
+    test.onclick = function () {
+      target.scrollIntoView()
+    }
+  </script>
+</body>
+```

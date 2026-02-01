@@ -1,0 +1,132 @@
+---
+title: 常用模板
+sidebar_position: 1
+description: 常用模板
+---
+
+import MyComponentSource from '!!raw-loader!@site/src/components/BroswerView'
+import test from '!!raw-loader!@site/.CPP/test.cpp'
+import createModule from '@site/.JS/main'
+import { createHandler } from '@site/src/utils/func/createHandler'
+
+<BrowserView>
+  <CodeBlock language="jsx" showLineNumbers title="test">
+    {MyComponentSource}
+  </CodeBlock>
+</BrowserView>
+
+<BrowserView>
+  <CodeBlock language="cpp" showLineNumbers title="test.cpp">
+    {test}
+  </CodeBlock>
+</BrowserView>
+
+<BrowserView>
+  <Tabs defaultValue="add">
+    <TabItem value="add" label="加法">
+      **1 + 2 = 3**
+      <CaculView handler={createHandler('add')} args={[1, 2]} />
+    </TabItem>
+    <TabItem value="sub" label="减法">
+      **1 - 2 = -1**
+      <CaculView handler={createHandler('sub')} args={[1, 2]} />
+    </TabItem>
+  </Tabs>
+</BrowserView>
+
+<BrowserView>
+  <Tabs defaultValue="orange">
+    <TabItem value="apple" label="Apple" default>
+      `This is an apple 🍎`
+    </TabItem>
+    <TabItem value="orange" label="Orange">
+      This is an orange 🍊
+    </TabItem>
+    <TabItem value="banana" label="Banana">
+      This is a banana 🍌
+    </TabItem>
+  </Tabs>
+</BrowserView>
+
+<BrowserView >
+  <Tabs groupId="operating-systems">
+  <TabItem value="win" label="Windows">Use Ctrl + C to copy.</TabItem>
+  <TabItem value="mac" label="macOS">Use Command + C to copy.</TabItem>
+</Tabs>
+
+<Tabs groupId="operating-systems">
+  <TabItem value="win" label="Windows">Use Ctrl + V to paste.</TabItem>
+  <TabItem value="mac" label="macOS">Use Command + V to paste.</TabItem>
+</Tabs>
+</BrowserView>
+
+> Easy to maintain open source documentation websites.
+>
+> — Docusaurus
+
+<BrowserView>
+  <CodeBlock language="js" showLineNumbers>
+    {}
+  </CodeBlock>
+</BrowserView>
+
+<details>
+  <summary>Toggle me!</summary>
+
+This is the detailed content
+
+```js
+console.log('Markdown features including the code block are available')
+```
+
+You can use Markdown here including **bold** and _italic_ text, and [inline link](https://docusaurus.io)
+
+  <details>
+    <summary>Nested toggle! Some surprise inside...</summary>
+
+    😲😲😲😲😲
+
+  </details>
+</details>
+
+```js showLineNumbers title="测试代码"
+// error
+console.log(dsd)
+```
+
+<BrowserView >
+  <Tabs>
+<TabItem value="js" label="JavaScript">
+
+```js
+function helloWorld() {
+  console.log('Hello, world!')
+}
+```
+
+</TabItem>
+<TabItem value="py" label="Python">
+
+```py
+def hello_world():
+  print("Hello, world!")
+```
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+```java
+class HelloWorld {
+  public static void main(String args[]) {
+    System.out.println("Hello, World");
+  }
+}
+```
+
+</TabItem>
+</Tabs>
+</BrowserView>
+
+<Admonition type="tip" icon="💡" title="Did you know...">
+  Use plugins to introduce shorter syntax for the most commonly used JSX elements in your project.
+</Admonition>

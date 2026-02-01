@@ -1,0 +1,90 @@
+# 题目 16 - 题目 20
+
+## 16.P 标签的背景色是什么
+
+```html showLineNumbers title="测试代码"
+<style type="text/css">
+  #parent p {
+    background-color: red;
+  }
+  div .a.b.c.d.e.f.g.h.i.j.k p {
+    background-color: green;
+  }
+</style>
+......
+<div id="parent">
+  <div class="a b c d e f g h i j k">
+    <p>xxxx</p>
+    // 这个 p 标签的背景色是红色
+  </div>
+</div>
+```
+
+## 17.脱离文档流有哪些方法
+
+- float
+  使用 float 可以脱离文档流。<br/>
+
+注意！！！：使用 float 脱离文档流时，其他盒子会无视这个元素，但其他盒子内的文本依然会为这个元素让出位置，环绕在该元素的周围。
+
+- absolute
+  absolute 称为绝对定位，其实博主觉得应该称为相对定位，因为使用 absolute 脱离文档流后的元素，是相对于该元素的父类（及以上，如果直系父类元素不满足条件则继续向上查询）元素进行定位的，并且这个父类元素的 position 必须是非 static 定位的（static 是默认定位方式）。
+
+- fixed
+  完全脱离文档流，相对于浏览器窗口进行定位。（相对于浏览器窗口就是相对于 html）。
+
+## 18.第二个子元素的高度是多少
+
+```html showLineNumbers title="测试代码"
+<div class="container">
+  <div style="height: 100px"></div>
+  <div style="min-height: 10px"></div>
+</div>
+<style>
+  .container {
+    display: flex;
+  }
+  .container > div {
+    width: 100px;
+  }
+</style>
+```
+
+Flex 布局会默认：
+
+- 把所有子项变成水平排列。
+- 默认不自动换行。
+- 让子项与其内容等宽，并把所有子项的高度变为最高子项的高度
+
+## 19.CSSOM 和 DOM 树是同时解析的吗
+
+浏览器会下下载 HTML 解析页面生成 DOM 树，遇到 CSS 标签就开始解析 CSS，这个过程不会阻塞，但是如果遇到了 JS 脚本，此时假如 CSSOM 还没有构建完，需要等待 CSSOM 构建完，再去执行 JS 脚本，然后再执行 DOM 解析，此时会阻塞。
+
+## 20.使用原生 js 实现以下效果：点击容器内的图标，图标边框变成 border:1px solid red，点击空白处重置
+
+```js showLineNumbers title="测试代码"
+const box = document.getElementById('box')
+
+function isIcon(target) {
+  return target.className.includes('icon')
+}
+
+box.onclick = function (e) {
+  e.stopPropagation()
+  const target = e.target
+  if (isIcon(target)) {
+    target.style.border = '1px solid red'
+  }
+}
+
+const doc = document
+
+doc.onclick = function (e) {
+  const children = box.children
+  for (let i = 0; i < children.length; i++) {
+    if (isIcon(children[i])) {
+      children[i].style.border = 'none'
+    }
+  }
+}
+```

@@ -1,0 +1,335 @@
+# 题目 1 - 题目 5
+
+## 1.CORS 是如何实现跨域的？
+
+CORS（Cross-Origin Resource Sharing）是一种用于实现跨域请求的机制，允许浏览器和服务器之间在不同源之间共享资源。CORS 通过在 HTTP 头部添加特定的字段来控制跨域访问。以下是 CORS 的工作原理及实现细节：
+
+当浏览器发起一个跨域请求时，它会先发送一个预检请求（preflight request），以检查服务器是否允许实际请求。这是通过发送一个 OPTIONS 请求来实现的，主要用于确认目标服务器是否允许跨域请求。
+
+2.  服务器响应
+
+服务器需要在响应中包含适当的 CORS 头部，以指示是否允许跨域请求。主要的 CORS 头部包括：
+
+- Access-Control-Allow-Origin：指定允许的源。可以是具体的域名，如 https://example.com，或通配符 \*（允许所有源）。
+- Access-Control-Allow-Methods：指定允许的方法，如 GET, POST, PUT, DELETE。
+- Access-Control-Allow-Headers：指定允许的请求头，如 Content-Type, Authorization。
+- Access-Control-Allow-Credentials：指示是否允许发送带有凭据（如 Cookies）的请求。
+- Access-Control-Max-Age：指示预检请求的结果可以缓存的时间（以秒为单位）。
+
+3. 客户端处理响应
+
+- 简单请求：如果请求满足 CORS 规则（如使用 GET 或 POST 方法，且请求头仅包括简单头部），浏览器会直接发送实际请求并处理响应。
+- 预检请求：对于复杂请求（如使用 PUT 方法或带有自定义头部），浏览器会先发送 OPTIONS 请求，然后根据服务器的响应决定是否发送实际请求。
+
+4.  简单请求
+
+满足以下条件的请求被认为是简单请求，不需要预检请求：
+
+- 方法：GET, POST, HEAD
+- 请求头：Accept, Accept-Language, Content-Language, Content-Type（值为 application/x-www-form-urlencoded, multipart/form-data, text/plain）
+
+5.  复杂请求
+
+不符合简单请求条件的请求会被认为是复杂请求，需要先发送预检请求。复杂请求包括：
+
+- 方法：PUT, DELETE, OPTIONS
+- 请求头：Authorization, Content-Type（值为其他非简单值）
+
+6 服务器设置
+
+6.1 响应 CORS 头部
+
+服务器需要在响应中包含必要的 CORS 头部。例如：
+
+```js showLineNumbers title="测试代码"
+HTTP/1.1 200 OK
+Access-Control-Allow-Origin: https://example.com
+Access-Control-Allow-Methods: GET, POST, PUT
+Access-Control-Allow-Headers: Content-Type, Authorization
+```
+
+6.2 处理预检请求
+
+对于预检请求，服务器需要回应适当的 CORS 头部：
+
+```js showLineNumbers title="测试代码"
+HTTP/1.1 204 No Content
+Access-Control-Allow-Origin: https://example.com
+Access-Control-Allow-Methods: GET, POST, PUT
+Access-Control-Allow-Headers: Content-Type, Authorization
+Access-Control-Max-Age: 3600
+```
+
+7.CORS 安全性
+
+- Access-Control-Allow-Origin：避免使用通配符 \*，特别是当使用 Credentials 时，以确保跨域请求只被信任的源访问。
+- Access-Control-Allow-Credentials：当设置为 true 时，Access-Control-Allow-Origin 不能为 \*，必须为具体的源。
+- Access-Control-Allow-Headers 和 Access-Control-Allow-Methods：应限制仅允许必要的头部和方法，以减少安全风险。
+
+## 2.JSONP 是如何实现跨域的?
+
+JSONP 的实现原理是通过添加一个 script 标签，指定 src 属性为跨域请求的 URL，而这个 URL 返回的不是 JSON 数据，而是一段可执行的 JavaScript 代码，这段代码会调用一个指定的函数，并且将 JSON 数据作为参数传入函数中。
+
+例如，假设我们从 http://example.com 域名下请求数据，我们可以通过在 http://example.com 中添加如下代码实现 JSONP 请求：
+
+```js showLineNumbers title="测试代码"
+function handleData(data) {
+  // 处理获取到的数据
+}
+
+const script = document.createElement('script')
+script.src = 'http://example.org/api/data?callback=handleData'
+document.head.appendChild(script)
+```
+
+在这个例子中，我们可以在 handleData 函数中处理获取到的数据。需要注意的是，在使用 JSONP 时，需要保证服务器端返回的数据是一个可执行的 JavaScript 代码，并且必须使用指定的回调函数名来包装数据，否则无法正确处理数据。
+
+### 如何获取 jsonp 的相应参数
+
+获取 JSONP 响应结果的方法有两种，一种是通过回调函数参数获取，另一种是通过 script 标签加载完成后解析全局变量获取。
+
+假设服务器返回以下 JSONP 响应：
+
+```js showLineNumbers title="测试代码"
+callback({ name: 'Alice', age: 20 })
+```
+
+我们可以使用以下两种方式获取响应结果：
+
+1. 通过回调函数参数获取 在客户端定义一个全局函数作为回调函数，服务器返回的数据会作为回调函数的参数传入，这个参数可以在回调函数中处理。
+
+```js showLineNumbers title="测试代码"
+function handleResponse(data) {
+  console.log(data.name) // Alice
+  console.log(data.age) // 20
+}
+
+// 创建 script 标签
+const script = document.createElement('script')
+script.src = 'http://example.com/api?callback=handleResponse'
+
+// 插入到文档中开始加载数据
+document.body.appendChild(script)
+```
+
+2. 通过全局变量获取 在客户端定义一个全局函数作为回调函数，服务器返回的数据会作为一个全局变量赋值给该函数所在的对象，我们可以在 script 标签加载完成后解析全局变量获取响应结果。
+
+```js showLineNumbers title="测试代码"
+function handleResponse() {
+  console.log(myData.name) // Alice
+  console.log(myData.age) // 20
+}
+
+// 创建 script 标签
+const script = document.createElement('script')
+script.src = 'http://example.com/api?callback=handleResponse'
+
+// 插入到文档中开始加载数据
+document.body.appendChild(script)
+
+// script 标签加载完成后解析全局变量
+window.myData = {}
+script.onload = () => {
+  delete window.myData // 删除全局变量
+}
+```
+
+注意，使用 JSONP 时要注意安全问题，应该对返回的数据进行验证，避免接收到恶意代码。此外，JSONP** 只能发送 GET 请求**，无法发送 POST 请求，**也无法使用 HTTP 请求头和请求体传递数据**。
+
+## 3.ajax 如何获取下载进度?
+
+1. 使用 XMLHttpRequest 监控下载进度
+
+1.1 创建 XMLHttpRequest 实例
+
+```js showLineNumbers title="测试代码"
+const xhr = new XMLHttpRequest()
+```
+
+1.2 配置请求
+
+设置请求的 URL 和方法（如 GET），并配置相关的事件监听器。
+
+```js showLineNumbers title="测试代码"
+xhr.open('GET', 'https://example.com/large-file', true)
+xhr.responseType = 'blob' // 如果下载的是二进制文件，可以设置为 'blob'
+```
+
+1.3 监听 progress 事件
+
+使用 progress 事件来获取下载进度。该事件会在文件下载过程中被触发。
+
+```js showLineNumbers title="测试代码"
+xhr.onprogress = function (event) {
+  if (event.lengthComputable) {
+    const percentComplete = (event.loaded / event.total) * 100
+    console.log(`Download progress: ${percentComplete.toFixed(2)}%`)
+  } else {
+    // 下载进度不可计算
+    console.log('Download progress: unknown')
+  }
+}
+```
+
+1.4 处理请求完成
+
+在请求完成后，处理下载的数据或执行其他操作。
+
+```js showLineNumbers title="测试代码"
+xhr.onload = function () {
+  if (xhr.status === 200) {
+    // 处理成功的响应，例如保存文件
+    const blob = xhr.response
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'filename.ext' // 设置下载文件名
+    document.body.appendChild(a)
+    a.click()
+    URL.revokeObjectURL(url) // 释放 URL 对象
+  } else {
+    console.error('Download failed')
+  }
+}
+```
+
+1.5 处理错误
+
+监听 error 和 abort 事件来处理可能的错误情况。
+
+```js showLineNumbers title="测试代码"
+xhr.onerror = function () {
+  console.error('Download error')
+}
+
+xhr.onabort = function () {
+  console.log('Download aborted')
+}
+```
+
+1.6 发送请求
+
+```js showLineNumbers title="测试代码"
+xhr.send()
+```
+
+```js showLineNumbers title="测试代码"
+const xhr = new XMLHttpRequest()
+xhr.open('GET', 'https://example.com/large-file', true)
+xhr.responseType = 'blob'
+
+xhr.onprogress = function (event) {
+  if (event.lengthComputable) {
+    const percentComplete = (event.loaded / event.total) * 100
+    console.log(`Download progress: ${percentComplete.toFixed(2)}%`)
+  } else {
+    console.log('Download progress: unknown')
+  }
+}
+
+xhr.onload = function () {
+  if (xhr.status === 200) {
+    const blob = xhr.response
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'filename.ext'
+    document.body.appendChild(a)
+    a.click()
+    URL.revokeObjectURL(url)
+  } else {
+    console.error('Download failed')
+  }
+}
+
+xhr.onerror = function () {
+  console.error('Download error')
+}
+
+xhr.onabort = function () {
+  console.log('Download aborted')
+}
+
+xhr.send()
+```
+
+## 4.HTTP 建立连接过程
+
+### HTTP/1.1
+
+建立连接过程遵循以下步骤：
+
+DNS 解析,建立 TCP 连接：客户端通过三次握手建立 TCP 连接。
+
+- 发送请求：客户端向服务器发送一个 HTTP 请求报文。
+
+- 服务器响应：服务器收到请求后，返回一个 HTTP 响应报文。
+
+- 客户端接收响应：客户端收到响应后，根据响应中的状态码判断请求是否成功。
+
+- 关闭连接：如果响应中包含 Connection: close 头部，那么连接关闭，否则保持连接，可以继续发送请求。
+
+### HTTP/2
+
+建立连接过程使用了多路复用，可以在一个连接上同时处理多个请求和响应，具体过程如下：
+
+- 客户端和服务器建立 TCP 连接。
+
+- 客户端发送一个 HTTP/2 的 SETTINGS 帧，其中包含一些配置信息，如帧的大小和流的并发数量等。
+
+- 服务器返回一个 HTTP/2 的 SETTINGS 帧，确认了客户端发送的设置。
+
+- 客户端发送一个 HTTP/2 的 HEADERS 帧，其中包含了第一个请求的信息，同时还包含了一个唯一的标识符，称为流 ID。
+
+- 服务器返回一个 HTTP/2 的 HEADERS 帧，其中包含了响应的信息，同时也包含了与请求相同的流 ID。
+
+- 客户端可以在同一个连接上发送多个请求和响应，每个请求和响应都包含一个流 ID，用于标识请求和响应之间的关系。
+
+- 当客户端或服务器想要关闭连接时，它可以发送一个 HTTP/2 的 GOAWAY 帧，表示不再接受新的请求或响应，并且将连接关闭。
+
+### HTTP/3
+
+基于 QUIC 协议：HTTP/3 使用 QUIC 协议，它在用户数据报协议（UDP）上实现了类似于 HTTP/2 的多路复用功能。它在一个连接上支持多个请求和响应，进一步优化了网络性能。
+
+## 5.HTTPS 中的 SSL/TLS 是什么？
+
+### SSL（Secure Sockets Layer）
+
+- 定义：SSL 是最早的安全协议，用于在网络上加密传输的数据。它确保数据在客户端和服务器之间的传输是安全的。
+- 历史：SSL 最初由 Netscape 开发，主要包括 SSL 2.0 和 SSL 3.0 两个版本。由于 SSL 2.0 和 SSL 3.0 存在一些安全漏洞，它们已经被淘汰。
+
+### TLS（Transport Layer Security）
+
+- 定义：TLS 是 SSL 的继任者，是一种用于保护网络通信的加密协议。TLS 对数据进行加密，确保数据在传输过程中不被窃取、或篡改。
+- 版本：TLS 从 TLS 1.0 开始，到当前的 TLS 1.3。每个版本都在前一个版本的基础上进行改进，增强了安全性和性能。
+
+### SSL/TLS 工作原理
+
+1. 握手过程（Handshake）
+
+   - 客户端发起连接：客户端向服务器发送一个“ClientHello”消息，包含了客户端支持的加密算法、TLS 版本等信息。
+   - 服务器响应：服务器回应一个“ServerHello”消息，选择加密算法、TLS 版本并发送服务器的数字证书。
+   - 证书验证：客户端使用服务器提供的证书验证服务器的身份。如果证书有效，客户端会生成一个“pre-master secret”并用服务器的公钥加密后发送给服务器。 (客公服私)
+   - 密钥交换：服务器使用其私钥解密“pre-master secret”，双方使用这个密钥生成对称加密密钥（session key），用于加密后续的通信数据。
+
+2. 数据加密和传输
+
+   - 加密数据：客户端和服务器使用会话密钥对数据进行加密，然后进行数据传输。
+   - 数据完整性：数据不仅被加密，还通过消息认证码（MAC）进行完整性检查，防止数据被篡改。
+
+3. 连接关闭
+
+   - 关闭连接：当通信结束时，双方会通过“close_notify”消息来优雅地关闭连接，确保所有的数据都被正确传输。
+
+### SSL/TLS 主要功能
+
+- 加密：SSL/TLS 通过对数据进行加密，保护数据在传输过程中不被窃取。
+- 身份验证：通过数字证书验证服务器的身份，防止中间人攻击。
+- 数据完整性：通过消息认证码（MAC）确保数据在传输过程中没有被篡改。
+
+### 常见的 SSL/TLS 证书类型
+
+- 自签名证书：由证书持有者自己签发的证书，通常用于开发和测试环境，不被浏览器信任。
+- 域名验证证书（DV）：验证申请者对域名的控制权，适合个人和小型网站。
+- 组织验证证书（OV）：验证申请者的身份和组织合法性，适合企业和组织。
+- 扩展验证证书（EV）：提供最高级别的身份验证和信任，显示公司名称在地址栏中。

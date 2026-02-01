@@ -1,0 +1,301 @@
+---
+title: 今日总结-2025-03-28
+authors: qjz
+tags: [solution]
+---
+
+## 千分位的实现
+
+```js showLineNumbers title="测试代码"
+function formatNumber(num) {
+  // 将数字转换为字符串
+  let numStr = num.toString()
+
+  // 使用正则表达式进行替换
+  let formattedStr = numStr.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+  // \/B表示非单词边界，(?=(\d{3})+(?!\d))表示匹配非单词边界的数字，然后匹配三个数字，然后匹配非数字。
+
+  return formattedStr
+}
+
+// 测试
+console.log(formatNumber(1000)) // 输出: 1,000
+console.log(formatNumber(1234567)) // 输出: 1,234,567
+console.log(formatNumber(9876543210)) // 输出: 9,876,543,210
+```
+
+## 如何实现 Promise 对象
+
+```js showLineNumbers title="测试代码"
+class MyPromise {
+  constructor(executor) {
+    this.state = 'pending' // 初始状态
+    this.value = undefined // 成功值
+    this.reason = undefined // 失败原因
+    this.onFulfilledCallbacks = [] // 成功回调队列
+    this.onRejectedCallbacks = [] // 失败回调队列
+
+    const resolve = value => {
+      if (this.state === 'pending') {
+        this.state = 'fulfilled'
+        this.value = value
+        this.onFulfilledCallbacks.forEach(callback => callback())
+      }
+    }
+
+    const reject = reason => {
+      if (this.state === 'pending') {
+        this.state = 'rejected'
+        this.reason = reason
+        this.onRejectedCallbacks.forEach(callback => callback())
+      }
+    }
+
+    try {
+      executor(resolve, reject)
+    } catch (error) {
+      reject(error)
+    }
+  }
+
+  then(onFulfilled, onRejected) {
+    onFulfilled = typeof onFulfilled === 'function' ? onFulfilled : value => value
+    onRejected =
+      typeof onRejected === 'function'
+        ? onRejected
+        : reason => {
+            throw reason
+          }
+
+    const promise2 = new MyPromise((resolve, reject) => {
+      if (this.state === 'fulfilled') {
+        setTimeout(() => {
+          try {
+            const x = onFulfilled(this.value)
+            resolvePromise(promise2, x, resolve, reject)
+          } catch (error) {
+            reject(error)
+          }
+        }, 0)
+      } else if (this.state === 'rejected') {
+        setTimeout(() => {
+          try {
+            const x = onRejected(this.reason)
+            resolvePromise(promise2, x, resolve, reject)
+          } catch (error) {
+            reject(error)
+          }
+        }, 0)
+      } else if (this.state === 'pending') {
+        this.onFulfilledCallbacks.push(() => {
+          setTimeout(() => {
+            try {
+              const x = onFulfilled(this.value)
+              resolvePromise(promise2, x, resolve, reject)
+            } catch (error) {
+              reject(error)
+            }
+          }, 0)
+        })
+
+        this.onRejectedCallbacks.push(() => {
+          setTimeout(() => {
+            try {
+              const x = onRejected(this.reason)
+              resolvePromise(promise2, x, resolve, reject)
+            } catch (error) {
+              reject(error)
+            }
+          }, 0)
+        })
+      }
+    })
+
+    return promise2
+  }
+}
+
+function resolvePromise(promise2, x, resolve, reject) {
+  if (promise2 === x) {
+    return reject(new TypeError('Chaining cycle detected for promise'))
+  }
+
+  let called = false
+  if (x !== null && (typeof x === 'object' || typeof x === 'function')) {
+    try {
+      const then = x.then
+      if (typeof then === 'function') {
+        then.call(
+          x,
+          y => {
+            if (called) return
+            called = true
+            resolvePromise(promise2, y, resolve, reject)
+          },
+          r => {
+            if (called) return
+            called = true
+            reject(r)
+          }
+        )
+      } else {
+        resolve(x)
+      }
+    } catch (error) {
+      if (called) return
+      called = true
+      reject(error)
+    }
+  } else {
+    resolve(x)
+  }
+}
+
+// 使用示例
+const promise = new MyPromise((resolve, reject) => {
+  setTimeout(() => {
+    resolve('Success')
+  }, 1000)
+})
+
+promise
+  .then(value => {
+    console.log(value) // 输出: 'Success'
+    return 'Next success'
+  })
+  .then(value => {
+    console.log(value) // 输出: 'Next success'
+  })
+  .catch(error => {
+    console.error(error)
+  })
+```
+
+## Promise 的 all 方法
+
+```js showLineNumbers title="测试代码"
+Promise.myAll = function (promises) {
+  return new Promise((resolve, reject) => {
+    if (!Array.isArray(promises)) {
+      return reject(new TypeError('Argument must be an array'))
+    }
+
+    let resolvedCount = 0
+    const results = new Array(promises.length)
+
+    promises.forEach((promise, index) => {
+      Promise.resolve(promise).then(
+        value => {
+          results[index] = value
+          resolvedCount += 1
+          if (resolvedCount === promises.length) {
+            resolve(results)
+          }
+        },
+        error => {
+          reject(error)
+        }
+      )
+    })
+  })
+}
+
+// 使用示例
+const promise1 = Promise.resolve(3)
+const promise2 = 42
+const promise3 = new Promise(resolve => setTimeout(resolve, 100, 'foo'))
+
+Promise.myAll([promise1, promise2, promise3])
+  .then(values => {
+    console.log(values) // 输出: [3, 42, 'foo']
+  })
+  .catch(error => {
+    console.error(error)
+  })
+```
+
+## Promise 的 race 方法
+
+```js showLineNumbers title="测试代码"
+Promise.myRace = function (promises) {
+  return new Promise((resolve, reject) => {
+    for (let promise of promises) {
+      Promise.resolve(promise).then(resolve, reject)
+    }
+  })
+}
+
+// 使用示例
+const promise1 = new Promise(resolve => setTimeout(resolve, 500, 'one'))
+const promise2 = new Promise(resolve => setTimeout(resolve, 100, 'two'))
+
+Promise.myRace([promise1, promise2])
+  .then(value => {
+    console.log(value) // 输出: 'two'
+  })
+  .catch(error => {
+    console.error(error)
+  })
+```
+
+## 图片的 lazyload 加载
+
+```js showLineNumbers title="测试代码"
+document.addEventListener('DOMContentLoaded', function () {
+  const lazyImages = document.querySelectorAll('.lazy')
+
+  if ('IntersectionObserver' in window) {
+    const lazyImageObserver = new IntersectionObserver((entries, observer) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const lazyImage = entry.target
+          lazyImage.src = lazyImage.getAttribute('data-src')
+          lazyImage.removeAttribute('data-src')
+          lazyImage.classList.remove('lazy')
+          observer.unobserve(lazyImage)
+        }
+      })
+    })
+
+    lazyImages.forEach(image => {
+      lazyImageObserver.observe(image)
+    })
+  } else {
+    // 在不支持 IntersectionObserver 的浏览器中
+    function debounce(func, delay) {
+      let timeoutId
+
+      return function (...args) {
+        // 清除之前的定时器
+        if (timeoutId) {
+          clearTimeout(timeoutId)
+        }
+
+        // 设置一个新的定时器
+        timeoutId = setTimeout(() => {
+          func.apply(this, args)
+        }, delay)
+      }
+    }
+    const lazyLoad = debounce(() => {
+      lazyImages.forEach(image => {
+        if (image.getBoundingClientRect().top < window.innerHeight && image.getBoundingClientRect().bottom > 0) {
+          image.src = image.getAttribute('data-src')
+          image.removeAttribute('data-src')
+          image.classList.remove('lazy')
+        }
+      })
+
+      if (lazyImages.length === 0) {
+        document.removeEventListener('scroll', lazyLoad)
+        window.removeEventListener('resize', lazyLoad)
+        window.removeEventListener('orientationchange', lazyLoad)
+      }
+    })
+
+    document.addEventListener('scroll', lazyLoad)
+    window.addEventListener('resize', lazyLoad)
+    window.addEventListener('orientationchange', lazyLoad)
+  }
+})
+```

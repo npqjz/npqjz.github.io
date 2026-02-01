@@ -1,56 +1,72 @@
 import clsx from 'clsx'
 import Heading from '@theme/Heading'
 import styles from './styles.module.css'
-import { useEffect, useRef } from 'react'
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { Stage, Sprite } from '@pixi/react'
+import { gsap } from 'gsap'
+import { getDeviceModel } from '@site/src/utils/func/getDevice'
+import Painting from './c-cpn/Painting'
+import { FeatureList, FeatureItem } from './data'
+import Link from '@docusaurus/Link'
 
-type FeatureItem = {
-  title: string
-  Svg: React.ComponentType<React.ComponentProps<'svg'>>
-  description: JSX.Element
-}
-
-const FeatureList: FeatureItem[] = [
-  {
-    title: '最 全 面',
-    Svg: require('@site/static/img/undraw_docusaurus_mountain.svg').default,
-    description: (
-      <>
-        关于计算机知识相关的知识与文档，这里有！
-        <br />
-        （好看的番，这里有！）😘
-      </>
-    )
-  },
-  {
-    title: '最 细 节',
-    Svg: require('@site/static/img/undraw_docusaurus_tree.svg').default,
-    description: (
-      <>
-        关于前端框架相关的知识与文档，这里也有！！
-        <br />
-        （好听的曲儿，这里也有！！）🥰
-      </>
-    )
-  },
-  {
-    title: '最 新 鲜',
-    Svg: require('@site/static/img/undraw_docusaurus_react.svg').default,
-    description: (
-      <>
-        关于最新的技术相关的新闻与新鲜事，这里必须得有！！！
-        <br />
-        （好玩的游戏，这里必须得有！！！）🤩
-      </>
-    )
+function Feature({ title, Svg, description, imgUrl, subtitle }: FeatureItem) {
+  const [isBlur, setIsBlur] = useState(false)
+  const spanRef = useRef<HTMLDivElement>(null)
+  function applyFiltersWithAnimation() {
+    if (getDeviceModel() !== 'pc') return
+    setIsBlur(true)
   }
-]
 
-function Feature({ title, Svg, description }: FeatureItem) {
+  function removeFiltersWithAnimation() {
+    if (getDeviceModel() !== 'pc') return
+    setIsBlur(false)
+  }
+
+  useEffect(() => {
+    if (spanRef.current) {
+      // spanRef.current.style.backgroundColor = '#f00000'
+
+      gsap.to(spanRef.current, {
+        duration: 0.3,
+        x: -80,
+        ease: 'power1.in'
+      })
+    }
+
+    return () => {
+      if (spanRef.current) {
+        gsap.to(spanRef.current, {
+          duration: 0.3,
+          x: 0,
+          ease: 'power1.out'
+        })
+      }
+    }
+  }, [isBlur])
+
   return (
-    <div className={clsx('col col--4')}>
-      <div className="text--center">
-        <Svg className={styles.featureSvg} role="img" />
-      </div>
+    <div className={clsx('col col--4', 'not-selectable')} style={{}}>
+      <Link to={`/docs/category/${subtitle}`}>
+        <div className={clsx('text--center', styles.mainCard, 'content')} onMouseEnter={applyFiltersWithAnimation} onMouseLeave={removeFiltersWithAnimation}>
+          {/* <Svg className={styles.featureSvg} role="img" /> */}
+          {/* {imgUrl ? <img src={imgUrl} loading="lazy" className="not-selectable" /> : <Svg className={styles.featureSvg} role="img" />} */}
+          {isBlur && (
+            <div ref={spanRef} className={clsx(styles.drawerBtn)}>
+              {subtitle.split('').map((item, index) => (
+                <span key={index} className={styles.char}>
+                  {item}
+                  <br />
+                </span>
+              ))}
+            </div>
+          )}
+          <Suspense fallback={<div>Loading...</div>}>
+            <Stage style={{ maxWidth: '100%', maxHeight: '300px' }}>
+              <Painting imgUrl={imgUrl} isBlur={isBlur} />
+            </Stage>
+          </Suspense>
+        </div>
+      </Link>
       <div className="text--center padding-horiz--md">
         <Heading as="h3" className="font-loong font-size-h2">
           {title}
@@ -65,11 +81,16 @@ export default function HomepageFeatures(): JSX.Element {
   const isMounted = useRef(false)
   useEffect(() => {
     isMounted.current = true
-    if (!staticx) {
-      startSakura()
-    }
-    if (isRemove) {
-      clickEffect()
+    try {
+      if (!staticx) {
+        startSakura()
+      }
+      if (isRemove) {
+        clickEffect()
+      }
+    } catch (error) {
+      // 跳转到404
+      location.href = '/'
     }
   })
 
@@ -85,7 +106,7 @@ export default function HomepageFeatures(): JSX.Element {
 
   return (
     <section className={styles.features}>
-      <div className="container">
+      <div className="container" style={{ marginTop: '2em' }}>
         <div className="row">
           {FeatureList.map((props, idx) => (
             <Feature key={idx} {...props} />

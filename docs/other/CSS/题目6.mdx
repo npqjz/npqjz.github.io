@@ -1,0 +1,457 @@
+# 题目 31 - 题目 35
+
+## 31.如果使用 CSS 提高页面性能
+
+- 内联首屏关键 CSS
+- 异步加载 CSS
+- 资源压缩
+- 合理使用选择器
+- 减少使用昂贵的属性
+- 不要使用@import
+
+1. 内联首屏关键 CSS <br />
+
+在打开一个页面，页面首要内容出现在屏幕的时间影响着用户的体验，而通过内联 css 关键代码能够使浏览器在下载完 html 后就能立刻渲染 <br />
+
+而如果外部引用 css 代码，在解析 html 结构过程中遇到外部 css 文件，才会开始下载 css 代码，再渲染 <br />
+
+所以，CSS 内联使用使渲染时间提前 <br />
+
+注意：但是较大的 css 代码并不合适内联（初始拥塞窗口、没有缓存），而其余代码则采取外部引用方式
+
+2. 异步加载 CSS <br />
+
+在 CSS 文件请求、下载、解析完成之前，CSS 会阻塞渲染，浏览器将不会渲染任何已处理的内容 <br />
+
+前面加载内联代码后，后面的外部引用 css 则没必要阻塞浏览器渲染。这时候就可以采取异步加载的方案，主要有如下： <br />
+
+- 使用 javascript 将 link 标签插到 head 标签最后
+
+```js showLineNumbers title="测试代码"
+// 创建link标签
+const myCSS = document.createElement('link')
+myCSS.rel = 'stylesheet'
+myCSS.href = 'mystyles.css'
+// 插入到header的最后位置
+document.head.insertBefore(myCSS, document.head.childNodes[document.head.childNodes.length - 1].nextSibling)
+```
+
+- 设置 link 标签 media 属性为 noexis，浏览器会认为当前样式表不适用当前类型，会在不阻塞页面渲染的情况下再进行下载。加载完成后，将 media 的值设为 screen 或 all，从而让浏览器开始解析 CSS
+
+```html showLineNumbers title="测试代码"
+<link rel="stylesheet" href="mystyles.css" media="noexist" onload="this.media='all'" />
+```
+
+- 通过 rel 属性将 link 元素标记为 alternate 可选样式表，也能实现浏览器异步加载。同样别忘了加载完成之后，将 rel 设回 stylesheet
+
+```html showLineNumbers title="测试代码"
+<link rel="alternate stylesheet" href="mystyles.css" onload="this.rel='stylesheet'" />
+```
+
+3. 资源压缩
+
+   <br /> 利用webpack、gulp/grunt、rollup等模块化工具，将css代码进行压缩，使文件变小，大大降低了浏览器的加载时间
+
+4. 合理使用选择器
+   css 匹配的规则是从右往左开始匹配，例如#markdown .content h3 匹配规则如下： <br />
+
+- 先找到 h3 标签元素
+- 然后去除祖先不是.content 的元素
+- 最后去除祖先不是#markdown 的元素
+  如果嵌套的层级更多，页面中的元素更多，那么匹配所要花费的时间代价自然更高 <br />
+
+所以我们在编写选择器的时候，可以遵循以下规则： <br />
+
+- 不要嵌套使用过多复杂选择器，最好不要三层以上
+- 使用 id 选择器就没必要再进行嵌套
+- 通配符和属性选择器效率最低，避免使用
+
+5. 减少使用昂贵的属性 <br />
+
+- 在页面发生重绘的时候，昂贵属性如 box-shadow/border-radius/filter/透明度/:nth-child 等，会降低浏览器的渲染性能
+
+6. 不要使用@import <br />
+   css 样式文件有两种引入方式，一种是 link 元素，另一种是@import <br />
+
+@import 会影响浏览器的并行下载，使得页面在加载时增加额外的延迟，增添了额外的往返耗时 <br />
+
+而且多个@import 可能会导致下载顺序紊乱 <br />
+
+比如一个 css 文件 index.css 包含了以下内容：@import url("reset.css") <br />
+
+那么浏览器就必须先把 index.css 下载、解析和执行后，才下载、解析和执行第二个文件 reset.css <br />
+
+## 32. 利用 CSS 画出三角形
+
+```css showLineNumbers title="测试代码"
+.border {
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 50px 50px;
+  border-color: transparent transparent #d9534f;
+}
+```
+
+空心三角形
+
+```css showLineNumbers title="测试代码"
+.border {
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 50px 50px;
+  border-color: transparent transparent #d9534f;
+  position: relative;
+}
+.border:after {
+  content: '';
+  border-style: solid;
+  border-width: 0 40px 40px;
+  border-color: transparent transparent #96ceb4;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+```
+
+直角三角形
+
+```css showLineNumbers title="测试代码"
+.box {
+  /* 内部大小 */
+  width: 0px;
+  height: 0px;
+  /* 边框大小 只设置两条边*/
+  border-top: #4285f4 solid;
+  border-right: transparent solid;
+  border-width: 85px;
+  /* 其他设置 */
+  margin: 50px;
+}
+```
+
+## 33.怎么让 Chrome 支持小于 12px 的文字
+
+1. 使用缩放比例
+
+```css showLineNumbers title="测试代码"
+.small-text {
+  transform: scale(0.8);
+}
+```
+
+2. 使用 zoom
+
+```css showLineNumbers title="测试代码"
+.small-text {
+  zoom: 0.8;
+}
+```
+
+3. 使用 -webkit-text-size-adjust：将容器或文本元素的 -webkit-text-size-adjust 属性设置为 "none" 或 "auto" 可以控制 Chrome 浏览器对文本大小的调整行为。通过将其设置为 "none"，可以禁用 Chrome 浏览器的最小字体大小限制。请注意，-webkit-text-size-adjust 是针对 WebKit 内核（包括 Chrome 和 Safari）的私有属性。
+
+```css showLineNumbers title="测试代码"
+.small-text {
+  -webkit-text-size-adjust: none;
+}
+```
+
+4. 使用图片替代：如果需要应用较小的文字大小，并且无法使用缩放，可以将文本转换为图像，并将其作为背景图像或内联图像插入到元素中。这样可以绕过浏览器的最小字体大小限制。但要注意，这将增加页面加载时间并且不利于可访问性和响应式设计。
+
+```css showLineNumbers title="测试代码"
+<div class="small-text">
+  <img src="path/to/small_text_image.png" alt="Small Text">
+</div>
+```
+
+## 34.多栏布局设计
+
+### 双栏布局
+
+- 使用 float 左浮左边栏
+- 右边模块使用 margin-left 撑出内容块做内容展示
+- 为父级元素添加 BFC，防止下方元素飞到上方内容
+
+```html showLineNumbers title="测试代码"
+<style>
+  .box{
+      overflow: hidden; 添加BFC
+  }
+  .left {
+      float: left;
+      width: 200px;
+      background-color: gray;
+      height: 400px;
+  }
+  .right {
+      margin-left: 210px;
+      background-color: lightgray;
+      height: 200px;
+  }
+</style>
+<div class="box">
+  <div class="left">左边</div>
+  <div class="right">右边</div>
+</div>
+```
+
+flex 弹性布局
+
+```html showLineNumbers title="测试代码"
+<style>
+  .box {
+    display: flex;
+  }
+  .left {
+    width: 100px;
+  }
+  .right {
+    flex: 1;
+  }
+</style>
+<div class="box">
+  <div class="left">左边</div>
+  <div class="right">右边</div>
+</div>
+```
+
+### 三栏布局
+
+- 两边使用 float，中间使用 margin
+
+```html showLineNumbers title="测试代码"
+<style>
+  .wrap {
+      background: #eee;
+      overflow: hidden; <!-- 生成BFC，计算高度时考虑浮动的元素 -->
+      padding: 20px;
+      height: 200px;
+  }
+  .left {
+      width: 200px;
+      height: 200px;
+      float: left;
+      background: coral;
+  }
+  .right {
+      width: 120px;
+      height: 200px;
+      float: right;
+      background: lightblue;
+  }
+  .middle {
+      margin-left: 220px;
+      height: 200px;
+      background: lightpink;
+      margin-right: 140px;
+  }
+</style>
+<div class="wrap">
+  <div class="left">左侧</div>
+  <div class="right">右侧</div>
+  <div class="middle">中间</div>
+</div>
+```
+
+- 两边使用 absolute，中间使用 margin
+
+```html showLineNumbers title="测试代码"
+<style>
+  .container {
+    position: relative;
+  }
+
+  .left,
+  .right,
+  .main {
+    height: 200px;
+    line-height: 200px;
+    text-align: center;
+  }
+
+  .left {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100px;
+    background: green;
+  }
+
+  .right {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100px;
+    background: green;
+  }
+
+  .main {
+    margin: 0 110px;
+    background: black;
+    color: white;
+  }
+</style>
+
+<div class="container">
+  <div class="left">左边固定宽度</div>
+  <div class="right">右边固定宽度</div>
+  <div class="main">中间自适应</div>
+</div>
+```
+
+- 两边使用 float 和负 margin
+
+```html showLineNumbers title="测试代码"
+<style>
+  .left,
+  .right,
+  .main {
+    height: 200px;
+    line-height: 200px;
+    text-align: center;
+  }
+
+  .main-wrapper {
+    float: left;
+    width: 100%;
+  }
+
+  .main {
+    margin: 0 110px;
+    background: black;
+    color: white;
+  }
+
+  .left,
+  .right {
+    float: left;
+    width: 100px;
+    margin-left: -100%;
+    background: green;
+  }
+
+  .right {
+    margin-left: -100px; /* 同自身宽度 */
+  }
+</style>
+
+<div class="main-wrapper">
+  <div class="main">中间自适应</div>
+</div>
+<div class="left">左边固定宽度</div>
+<div class="right">右边固定宽度</div>
+```
+
+- display: table 实现
+
+```html showLineNumbers title="测试代码"
+<style>
+  .container {
+    height: 200px;
+    line-height: 200px;
+    text-align: center;
+    display: table;
+    table-layout: fixed;
+    width: 100%;
+  }
+
+  .left,
+  .right,
+  .main {
+    display: table-cell;
+  }
+
+  .left,
+  .right {
+    width: 100px;
+    background: green;
+  }
+
+  .main {
+    background: black;
+    color: white;
+    width: 100%;
+  }
+</style>
+
+<div class="container">
+  <div class="left">左边固定宽度</div>
+  <div class="main">中间自适应</div>
+  <div class="right">右边固定宽度</div>
+</div>
+```
+
+- flex 实现
+
+```html showLineNumbers title="测试代码"
+<style type="text/css">
+  .wrap {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .left,
+  .right,
+  .middle {
+    height: 100px;
+  }
+
+  .left {
+    width: 200px;
+    background: coral;
+  }
+
+  .right {
+    width: 120px;
+    background: lightblue;
+  }
+
+  .middle {
+    background: #555;
+    width: 100%;
+    margin: 0 20px;
+  }
+</style>
+<div class="wrap">
+  <div class="left">左侧</div>
+  <div class="middle">中间</div>
+  <div class="right">右侧</div>
+</div>
+```
+
+- grid 网格布局
+
+```html showLineNumbers title="测试代码"
+<style>
+  .wrap {
+    display: grid;
+    width: 100%;
+    grid-template-columns: 300px auto 300px;
+  }
+
+  .left,
+  .right,
+  .middle {
+    height: 100px;
+  }
+
+  .left {
+    background: coral;
+  }
+
+  .right {
+    width: 300px;
+    background: lightblue;
+  }
+
+  .middle {
+    background: #555;
+  }
+</style>
+<div class="wrap">
+  <div class="left">左侧</div>
+  <div class="middle">中间</div>
+  <div class="right">右侧</div>
+</div>
+```

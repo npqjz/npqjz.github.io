@@ -8,6 +8,7 @@
 @import '@arco-design/web-react/dist/css/arco.css';
 @import './var.scss';
 @import './common.scss';
+@import './navbar.scss';
 
 :root {
   --ifm-color-primary: #2e7385;
@@ -17,7 +18,7 @@
   --ifm-color-primary-light: #337f92;
   --ifm-color-primary-lighter: #358499;
   --ifm-color-primary-lightest: #3c96ad;
-  --ifm-font-size-base: 102%;
+  --ifm-font-size-base: 101%;
   --ifm-font-size-base-code: 80%;
   --ifm-line-height-base: 1.65;
   --ifm-color-background-color-list: rgba(255, 255, 255, 0.5);
@@ -25,11 +26,14 @@
   --font-color: #333;
   --font-color-outline: #fff;
   --ifm-color-background: #f5f5dc; /* 白天模式背景颜色 */
+  --ifm-color-background--deep: #b9b953; /* 夜间模式背景颜色 */
   --ifm-navbar-background-color: #f5f5dc;
   --ifm-footer-background-color: #f5f5dc;
   --ifm-color-background-other: #f2f2c6;
   --ifm-navbar-link-custom-color: var(--ifm-color-primary-dark);
   --docusaurus-highlighted-code-line-bg: rgb(180, 189, 213);
+  --ifm-track-color: rgb(215, 210, 183);
+  --ifm-thumb-color: rgb(192, 163, 38);
 }
 
 /* 在深色模式下，为了可读性，你应该选择一个较浅的调色板。 */
@@ -45,6 +49,7 @@
   --font-color: #fff;
   --font-color-outline: #333;
   --ifm-color-background--dark: #0f172a; /* 夜间模式背景颜色 */
+  --ifm-color-background--deep: #323d56; /* 夜间模式背景颜色 */
   --ifm-navbar-background-color: #0f172a;
   --ifm-footer-background-color: #0f172a;
   --ifm-color-background-dark-other: #0e1421;
@@ -52,6 +57,8 @@
   --ifm-navbar-link-custom-color: var(--ifm-color-primary-dark);
   --ifm-transition-timing-default: cubic-bezier(0.08, 0.52, 0.52, 1);
   --ifm-transition-fast: 200ms;
+  --ifm-track-color: rgb(183, 180, 210);
+  --ifm-thumb-color: rgb(14, 14, 125);
 }
 
 @for $i from 1 through 4 {
@@ -77,8 +84,17 @@
 }
 
 code {
-  font: var(--ifm-font-size-base-code) / var(--ifm-line-height-base) var(--ifm-font-family-base) !important;
-  // font-size: var(--font-size-base);
+  span {
+    font: var(--ifm-font-size-base-code) / var(--ifm-line-height-base) !important;
+    font-family: var(--font-family-mono) !important;
+  } // font-size: var(--font-size-base);
+}
+
+.token-line {
+  span {
+    font: var(--ifm-font-size-base) / var(--ifm-line-height-base) !important;
+    font-family: var(--font-family-mono) !important;
+  }
 }
 
 /* 白天模式 */
@@ -128,4 +144,23 @@ html[data-theme='dark'] {
   100% {
     background-position: 40px 40px;
   }
+}
+
+:root {
+  --font-family-mono: Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  border-radius: 3px;
+  background: var(--ifm-track-color);
+  box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.08);
+}
+::-webkit-scrollbar-thumb {
+  border-radius: 3px;
+  background: var(--ifm-thumb-color);
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2);
 }

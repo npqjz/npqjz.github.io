@@ -1,0 +1,145 @@
+---
+title: 今日总结-2025-03-17
+authors: qjz
+tags: [solution]
+---
+
+## BFC 的触发条件
+
+- html 根元素` <html>`
+- float 不为 none
+- 绝对定位元素 也就是 position 为 absolute 和 fixed
+- 行内快元素 display 为 inline-block
+- display 为 table-cell inline-block flex inline-flex grid inline-grid table-caption(表格标题)
+- overflow 不为 visible
+
+:::info 规则
+
+1. 内部的 Box 会在垂直方向，一个接一个地放置。Box 垂直方向的距离由 margin 决定。属于同一个 BFC 的两个相邻 Box 的 margin 会发生重叠。
+2. 每个元素的 margin box 的左边， 与包含块 border box 的左边相接触(对于从左往右的格式化，否则相反)。即使存在浮动也是如此。
+3. BFC 的区域不会与 float box 重叠。
+4. F/C 就是页面上的一个隔离的独立容器，容器里面的子元素不会影响到外面的元素。反之也如此。
+5. 计算 BFC 的高度时，浮动元素也参与计算。
+
+:::
+
+## var 在函数内部变量提升不会覆盖参数值
+
+```js showLineNumbers title="测试代码"
+var foo = { n: 1 }
+;(function (foo) {
+  console.log(foo.n) // 输出1
+  foo.n = 3
+  var foo = { n: 2 }
+  console.log(foo.n)
+})(foo)
+console.log(foo.n)
+```
+
+## ajax 的 onreadyState
+
+0 ：未初始化，还没有调用 send()方法
+
+1 ：载入，已调用 send()方法，正在发送请求
+
+2 ：载入完成，send()方法执行完成，已经接收到全部响应内容
+
+3 ：交互，正在解析响应内容
+
+4 ：完成，响应内容解析完成，可以在客户端调用了
+
+## sql 中的 delete 和 drop 以及 三大范式
+
+- delete 是删除表中的数据
+- drop 是删除表结构
+
+- 1NF: 每个列都是不了再分的(原子性)
+- 2NF: 一是表必须有一个主键；二是没有包含在主键中的列必须完全依赖于主键，而不能只依赖于主键的一部分
+- 3NF: 非主键列必须直接依赖于主键，不能存在传递依赖。即不能存在：非主键列 A 依赖于非主键列 B，非主键列 B 依赖于主键的情况。
+
+## 主流浏览器内核
+
+- IE - Trident
+- opera - blink
+- google - webkit
+- safari - webkit
+- firefox - gecko
+
+## 批处理躲到系统，首要考虑的是吞吐量和系统效率
+
+## 在一个 html 静态网站里 A 页面需要跳转并传递相关数据到 B 页面（两个页面处于同个域名下）请按照你对此场景的理解写出 N 中页面之前传参的代码（只需写出 A 页面传递参数及 B 页面接收参数的 js 关键代码）
+
+```js showLineNumbers title="测试代码"
+// A页面
+// 跳转时拼接参数
+const data = { id: 123, name: 'Alice' }
+const params = new URLSearchParams(data).toString()
+window.location.href = `b.html?${params}`
+
+// 或直接拼接（需手动编码）
+window.location.href = `b.html?id=${encodeURIComponent(123)}&name=${encodeURIComponent('Alice')}`
+
+// b页面
+// 解析 URL 参数
+const params = new URLSearchParams(window.location.search)
+const id = params.get('id') // "123"
+const name = params.get('name') // "Alice"
+```
+
+```js showLineNumbers title="测试代码"
+// A
+const data = { id: 456, name: 'Bob' }
+// 使用唯一键名（避免冲突）
+localStorage.setItem('pageBData', JSON.stringify(data))
+window.location.href = 'b.html'
+
+// B
+// 页面加载时读取
+window.addEventListener('DOMContentLoaded', () => {
+  const rawData = localStorage.getItem('pageBData')
+  if (rawData) {
+    const data = JSON.parse(rawData)
+    console.log(data.id, data.name) // 456, "Bob"
+    localStorage.removeItem('pageBData') // 清理数据
+  }
+})
+```
+
+```js showLineNumbers title="测试代码"
+// A
+const data = { id: 789, name: 'Charlie' }
+document.cookie = `pageBData=${encodeURIComponent(JSON.stringify(data))}; path=/; max-age=60` // 有效期 60 秒
+window.location.href = 'b.html'
+
+// B
+// 解析 Cookie
+const cookieData = document.cookie
+  .split('; ')
+  .find(row => row.startsWith('pageBData='))
+  ?.split('=')[1]
+
+if (cookieData) {
+  const data = JSON.parse(decodeURIComponent(cookieData))
+  console.log(data.id, data.name) // 789, "Charlie"
+}
+```
+
+```js showLineNumbers title="测试代码"
+// A
+const data = { id: 100, name: 'David' }
+window.open('b.html', '_blank')
+window.addEventListener('message', event => {
+  if (event.data === 'B_READY') {
+    // 等待 B 页面就绪
+    event.source.postMessage(data, event.origin) // 发送数据
+  }
+})
+
+// B
+window.opener.postMessage('B_READY', '*') // 通知 A 页面准备接收
+window.addEventListener('message', event => {
+  if (event.data) {
+    console.log(event.data.id, event.data.name) // 100, "David"
+  }
+})
+```

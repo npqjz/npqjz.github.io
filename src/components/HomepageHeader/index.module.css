@@ -33,6 +33,13 @@
   background: url('@site/static/img/miku.jpg') no-repeat center -130px;
 }
 
+@media screen and (max-width: 768px) {
+  .container {
+    background: url('@site/static/img/miku.jpg') no-repeat -120px 0px;
+  }
+
+}
+
 
 /* From Uiverse.io by mrhyddenn */
 .button {
@@ -130,7 +137,7 @@
 }
 
 .toolItem {
-  transition: all .3s;
+  transition: all .05s;
 }
 
 .toolItem:nth-child(1) {
@@ -147,8 +154,40 @@
   font-size: var(--font-size-h1);
 }
 
-.toolIcon:hover {
-  color: var(--ifm-color-primary-darkest);
-  cursor: pointer;
+.toolItemMusic {
+  position: absolute;
+  left: 2rem;
+  top: 1rem;
+  width: 3rem;
+  height: 3rem;
+  font-size: var(--font-size-h1);
+  outline: 2px var(--ifm-color-primary) solid;
+  /* border: 2px var(--font-size-h1) solid; */
+  border-radius: 50%;
+  /* animation: alternate 3s infinite spin; */
+  /* 保持终点位置，重复动画 */
+  /* animation: spin 3s linear infinite; */
 }
 
+.toolItemCard {
+  position: absolute;
+  left: 2rem;
+  top: 5rem;
+  width: 3rem;
+  height: 3rem;
+  font-size: var(--font-size-h1);
+  outline: 2px var(--ifm-color-primary) solid;
+  /* border: 2px var(--font-size-h1) solid; */
+  border-radius: 50%;
+  /* animation: alternate 3s infinite spin; */
+  /* 保持终点位置，重复动画 */
+  /* animation: spin 3s linear infinite; */
+}
+
+
+
+.toolIcon:hover {
+  color: var(--ifm-color-primary-darkest);
+  border-color: var(--ifm-color-primary-darkest);
+  cursor: pointer;
+}

@@ -85,3 +85,52 @@
 .browserWindowBody>*:last-child {
    margin-bottom: 0;
 }
+
+.card {
+   width: 300px;
+   height: 200px;
+   font-family: var(--ifm-font-family-mono);
+   font-size: var(--ifm-font-size-base);
+}
+
+/* From Uiverse.io by kamehame-ha */
+.button {
+   display: flex;
+   justify-content: center;
+   align-items: center;
+   padding: 0 15px;
+   gap: 15px;
+   background-color: var(--ifm-color-primary);
+   outline: 3px var(--ifm-color-primary) solid;
+   outline-offset: -3px;
+   border-radius: 5px;
+   border: none;
+   cursor: pointer;
+   transition: 400ms;
+   margin-bottom: 3rem;
+}
+
+.button .text {
+   color: white;
+   font-weight: 700;
+   line-height: 2em;
+   font-size: 1em;
+   transition: 400ms;
+   margin: 0;
+}
+
+.button svg path {
+   transition: 400ms;
+}
+
+.button:hover {
+   background-color: transparent;
+}
+
+.button:hover .text {
+   color: var(--ifm-color-primary);
+}
+
+.button:hover svg path {
+   fill: var(--ifm-color-primary);
+}

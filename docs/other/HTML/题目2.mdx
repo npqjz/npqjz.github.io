@@ -1,0 +1,191 @@
+# 题目 6 - 题目 10
+
+## 6.视频如何添加字字幕
+
+在 HTML 中，可以通过 `<track> `标签为视频添加字幕。这个标签通常与 `<video>` 标签一起使用。以下是如何添加字幕的步骤和示例：
+
+```js showLineNumbers title="测试代码"
+<video controls>
+  <source src="video.mp4" type="video/mp4">
+  <track src="subtitles.vtt" kind="subtitles" srclang="en" label="English">
+  <track src="subtitles-zh.vtt" kind="subtitles" srclang="zh" label="中文">
+  Your browser does not support the video tag.
+</video>
+```
+
+- src：指定字幕文件的路径。
+- kind：字幕类型，常用值有：
+  - subtitles：表示字幕，通常用于翻译内容。
+  - captions：表示听障者的字幕，包含额外的描述信息。
+  - descriptions：描述性字幕，提供视频内容的额外信息。
+  - chapters：章节标题。
+- srclang：字幕语言的代码（如 en、zh）。
+- label：用户界面中显示的语言名称。
+
+## 7.如何避免重绘或者重排
+
+触发重排和重绘
+
+- 添加、删除、更新 DOM 节点
+- 通过 display: none 隐藏一个 DOM 节点-触发重排和重绘
+- 通过 visibility: hidden 隐藏一个 DOM 节点-只触发重绘，因为没有几何变化
+- 移动或者给页面中的 DOM 节点添加动画
+- 添加一个样式表，调整样式属性
+- 用户行为，例如调整窗口大小，改变字号，或者滚动。
+  如何避免重绘或者重排
+
+集中改变样式
+
+- 我们往往通过改变 class 的方式来集中改变样式
+
+```js showLineNumbers title="测试代码"
+// 判断是否是黑色系样式
+const theme = isDark ? 'dark' : 'light'
+
+// 根据判断来设置不同的class
+ele.setAttribute('className', theme)
+```
+
+使用 DocumentFragment
+
+- 我们可以通过 createDocumentFragment 创建一个游离于 DOM 树之外的节点，然后在此节点上批量操作，最后插入 DOM 树中，因此只触发一次重排
+
+```js showLineNumbers title="测试代码"
+var fragment = document.createDocumentFragment()
+
+for (let i = 0; i < 10; i++) {
+  let node = document.createElement('p')
+  node.innerHTML = i
+  fragment.appendChild(node)
+}
+
+document.body.appendChild(fragment)
+```
+
+提升为合成层
+
+- 元素提升为合成层有以下优点：
+
+  - 合成层的位图，会交由 GPU 合成，比 CPU 处理要快
+  - 当需要 repaint 时，只需要 repaint 本身，不会影响到其他的层
+  - 对于 transform 和 opacity 效果，不会触发 layout 和 paint
+
+- 提升合成层的最好方式是使用 CSS 的 will-change 属性：
+
+```css showLineNumbers title="测试代码"
+#target {
+  will-change: transform;
+}
+```
+
+## 8.web components 是什么？
+
+Web Components 是一组 Web 平台 API，允许开发者创建封装性强、可重用的组件，这些组件可以在任何 Web 应用程序中使用。Web Components 主要包括以下四个核心技术：
+
+1. 自定义元素（Custom Elements） <br />
+   允许开发者定义新的 HTML 元素及其行为。这些自定义元素可以像内置元素一样被使用，并且支持生命周期回调函数。
+
+2. 模板（Templates） <br />
+   `<template> `元素用于定义可以重复使用的 HTML 结构。模板中的内容在被使用时才会被实例化和插入到 DOM 中，从而提高性能和重用性。
+
+3. Shadow DOM <br />
+   允许将组件的内部结构和样式封装在一个独立的 DOM 子树中，这样可以避免样式和脚本的冲突。Shadow DOM 使组件可以有自己的封闭样式和结构。
+
+4. HTML Imports（已废弃） <br />
+   HTML Imports 曾用于引入和使用 HTML 文档的片段，但该技术已被废弃，现代 Web 组件技术通常通过模块化 JavaScript 或 ES6 模块来替代。
+
+5.Web Components 的优势
+
+- 封装性：通过 Shadow DOM 隔离组件的样式和结构，避免全局样式和脚本的干扰。
+- 重用性：自定义元素可以被多次重用，促进代码的模块化和组织。
+- 标准化：作为 Web 标准的一部分，Web Components 与各种 JavaScript 框架和库兼容，能够在不同的环境中使用。
+
+```html showLineNumbers title="测试代码"
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Web Components Example</title>
+    <script>
+      class MyElement extends HTMLElement {
+        constructor() {
+          super()
+          const shadow = this.attachShadow({ mode: 'open' })
+          shadow.innerHTML = `<style>p { color: red; }</style><p>Hello, Web Components!</p>`
+        }
+      }
+      customElements.define('my-element', MyElement)
+    </script>
+  </head>
+  <body>
+    <my-element></my-element>
+  </body>
+</html>
+```
+
+## 9.html 中前缀为 data- 开头的元素属性是什么？
+
+在 HTML 中，前缀为 data- 的元素属性被称为 自定义数据属性（Custom Data Attributes）。这些属性用于存储与元素相关的私有数据，供 JavaScript 使用，而不会影响页面的样式或行为。
+
+主要特点
+
+1. 自定义数据存储：
+
+- 自定义数据属性允许开发者在 HTML 元素上存储额外的信息，这些信息不会影响 HTML 的标准行为或样式。 <br />
+
+2. 不影响页面表现：
+
+- 属性不会被浏览器默认处理或渲染，它们只用于存储数据并可通过 JavaScript 访问。 <br />
+
+3. 灵活性：
+
+- 自定义数据属性名称是自由定义的，只需以 data- 为前缀，并且后面跟着自定义的名称。例如，data-user-id 和 data-info 都是合法的自定义数据属性。 <br />
+
+```js showLineNumbers title="测试代码"
+const element = document.getElementById('myElement')
+
+// 获取自定义数据属性
+const userId = element.getAttribute('data-user-id')
+const role = element.getAttribute('data-role')
+
+console.log(userId) // 输出: 12345
+console.log(role) // 输出: admin
+
+// 使用 dataset 访问
+const data = element.dataset
+console.log(data.userId) // 输出: 12345
+console.log(data.role) // 输出: admin
+```
+
+注意：
+
+- dataset 属性是一个对象，包含了所有以 data- 开头的属性，以驼峰命名的形式作为键（例如，data-user-id 会被访问为 dataset.userId）。
+- 属性名称中只允许使用字母、数字、- 和 \_。在 JavaScript 中访问时，连字符（-）会被转换为驼峰命名法（例如，data-user-id 变成 dataset.userId）。
+
+## 10.link 标签上有哪些属性，作用分别是什么？
+
+`<link> `标签在 HTML 中用于链接外部资源，最常见的是用于引入样式表（CSS）。它可以有多个属性，每个属性具有不同的作用。
+
+以下是常用的 `<link> `标签属性及其`作用：
+
+1. rel
+
+- 作用：定义当前文档与目标资源之间的关系。用于指示链接资源的类型。
+- 常见值：
+  - stylesheet：指示链接的资源是一个样式表。
+  - icon：指示链接的资源是网站图标（favicon）。
+  - preload：指示预加载资源（如字体、脚本）。
+    - 作用：指定浏览器在页面加载时优先加载资源。适用于关键资源（如字体、脚本、样式表），可以提高页面加载速度和用户体验。
+    - 用法：用于在文档加载时预加载资源，确保它们在需要时可以快速访问。
+  - prefetch：指示预取资源，以便在用户可能需要时可以更快地加载。
+    - 指示浏览器预取资源，这些资源在未来的导航或用户交互中可能会被用到。适用于不是立即需要的资源，但预计在将来会用到的场景。
+    - 用于在空闲时加载资源，以加快未来页面的加载速度。
+
+2. media
+
+- 作用：指定样式表应用的媒体类型或设备条件。用于响应式设计，决定样式表在哪些条件下应用。
+- 常见值：
+  - all：所有设备。
+  - screen：屏幕设备。
+  - print：打印设备。
+  - (min-width: 600px)：具有至少 600 像素宽度的设备。

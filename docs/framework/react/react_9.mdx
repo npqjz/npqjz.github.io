@@ -1,0 +1,421 @@
+# 题目 57 - 题目 64
+
+## 57. 你在 React 项目中是如何使用 Redux 的? 项目结构是如何划分的？
+
+1. 在 React 项目中使用 Redux 的流程
+
+1.1 安装与配置 Redux
+
+- 安装依赖：首先安装 Redux 和 React-Redux，通常还会使用 Redux Toolkit 来简化 Redux 的使用。
+
+```js showLineNumbers title="测试代码"
+npm install redux react-redux @reduxjs/toolkit
+```
+
+创建 Store：使用 Redux Toolkit 的 configureStore 方法来创建 Redux 的 store。
+
+```js showLineNumbers title="测试代码"
+import { configureStore } from '@reduxjs/toolkit'
+import rootReducer from './reducers'
+
+const store = configureStore({
+  reducer: rootReducer
+})
+
+export default store
+```
+
+1.2 创建 Reducer 和 Action
+
+- 定义 Slice：在 Redux Toolkit 中，通常使用 createSlice 方法来定义 reducer 和 action。
+
+```js showLineNumbers title="测试代码"
+import { createSlice } from '@reduxjs/toolkit'
+
+const counterSlice = createSlice({
+  name: 'counter',
+  initialState: 0,
+  reducers: {
+    increment: state => state + 1,
+    decrement: state => state - 1
+  }
+})
+
+export const { increment, decrement } = counterSlice.actions
+export default counterSlice.reducer
+```
+
+1.3 连接 Redux 与 React
+
+- 提供 Store：使用 Provider 组件将 Redux store 提供给整个应用。
+
+```js showLineNumbers title="测试代码"
+import React from 'react'
+import ReactDOM from 'react-dom'
+import { Provider } from 'react-redux'
+import store from './store'
+import App from './App'
+
+ReactDOM.render(
+  <Provider store={store}>
+    <App />
+  </Provider>,
+  document.getElementById('root')
+)
+```
+
+- 使用状态和派发动作：使用 useSelector 获取状态，使用 useDispatch 派发动作。
+
+```js showLineNumbers title="测试代码"
+import React from 'react'
+import { useSelector, useDispatch } from 'react-redux'
+import { increment, decrement } from './counterSlice'
+
+function Counter() {
+  const count = useSelector(state => state.counter)
+  const dispatch = useDispatch()
+
+  return (
+    <div>
+      <button onClick={() => dispatch(decrement())}>-</button>
+      <span>{count}</span>
+      <button onClick={() => dispatch(increment())}>+</button>
+    </div>
+  )
+}
+
+export default Counter
+```
+
+2. 项目结构的划分
+
+2.1 典型的 Redux 项目结构
+
+- src/
+  - components/：用于存放无状态的展示组件，通常只负责 UI 渲染。
+  - features/ 或 slices/：用于存放 Redux 相关的逻辑，每个功能模块一个文件夹。
+    - counterSlice.js：定义 slice 和相关的 actions、reducers。
+  - reducers/：用于存放 rootReducer 和其他手动管理的 reducers。
+    - index.js：组合所有 reducers。
+  - store/：用于存放 Redux 的 store 配置文件。
+    - index.js：创建并导出 Redux store。
+  - App.js：应用的根组件，通常在这里引入 Provider。
+  - index.js：入口文件，渲染根组件。
+
+## 58.说说对 Redux 中间件的理解？常用的中间件有哪些？实现原理？
+
+常用的中间件
+
+有很多优秀的 redux 中间件，如：
+
+- redux-thunk：用于异步操作
+- redux-logger：用于日志记录
+
+上述的中间件都需要通过 applyMiddlewares 进行注册，作用是将所有的中间件组成一个数组，依次执行
+
+然后作为第二个参数传入到 createStore 中
+
+```js showLineNumbers title="测试代码"
+const store = createStore(reducer, applyMiddleware(thunk, logger))
+```
+
+redux-thunk
+
+redux-thunk 是官网推荐的异步处理中间件
+
+默认情况下的 dispatch(action)，action 需要是一个 JavaScript 的对象
+
+redux-thunk 中间件会判断你当前传进来的数据类型，如果是一个函数，将会给函数传入参数值（dispatch，getState）
+
+- dispatch 函数用于我们之后再次派发 action
+- getState 函数考虑到我们之后的一些操作需要依赖原来的状态，用于让我们可以获取之前的一些状态
+
+```js showLineNumbers title="测试代码"
+const getHomeMultidataAction = () => {
+  return dispatch => {
+    axios.get('http://xxx.xx.xx.xx/test').then(res => {
+      const data = res.data.data
+      dispatch(changeBannersAction(data.banner.list))
+      dispatch(changeRecommendsAction(data.recommend.list))
+    })
+  }
+}
+```
+
+redux-logger
+
+如果想要实现一个日志功能，则可以使用现成的 redux-logger
+
+```js showLineNumbers title="测试代码"
+import { applyMiddleware, createStore } from 'redux'
+import createLogger from 'redux-logger'
+const logger = createLogger()
+
+const store = createStore(reducer, applyMiddleware(logger))
+```
+
+## 59.在 react 中怎么实现组件间的过渡动画？
+
+1. 使用 React Transition Group
+
+1.1 介绍 React Transition Group
+
+- 定义：React Transition Group 是 React 官方提供的一个用于处理组件过渡动画的库。它允许你在组件进入、退出或变化时添加过渡动画效果。
+
+安装：你可以通过 npm 或 yarn 安装：
+
+```js showLineNumbers title="测试代码"
+npm install react-transition-group
+```
+
+核心组件：
+
+- CSSTransition：为单个元素添加过渡动画。
+- TransitionGroup：管理一组带动画的组件，可以实现多个组件之间的过渡效果。
+
+  1.2 使用 CSSTransition 实现过渡动画
+
+基本用法：通过 CSSTransition 包裹需要动画的组件，配置 timeout 和 classNames 等属性。classNames 属性定义了动画的 CSS 类前缀，而 timeout 则是动画的持续时间。
+
+```js showLineNumbers title="测试代码"
+import React, { useState } from 'react'
+import { CSSTransition } from 'react-transition-group'
+import './styles.css'
+
+function MyComponent() {
+  const [inProp, setInProp] = useState(false)
+
+  return (
+    <div>
+      <CSSTransition in={inProp} timeout={300} classNames="fade">
+        <div className="my-component">Hello, world!</div>
+      </CSSTransition>
+      <button onClick={() => setInProp(!inProp)}>Toggle</button>
+    </div>
+  )
+}
+
+export default MyComponent
+```
+
+```css showLineNumbers title="测试代码"
+.fade-enter {
+  opacity: 0;
+}
+.fade-enter-active {
+  opacity: 1;
+  transition: opacity 300ms;
+}
+.fade-exit {
+  opacity: 1;
+}
+.fade-exit-active {
+  opacity: 0;
+  transition: opacity 300ms;
+}
+```
+
+1.3 使用 TransitionGroup 实现组件列表的过渡
+
+- 基本用法：当你有一组组件需要进行过渡动画时，可以使用 TransitionGroup 来管理这些组件。它与 CSSTransition 结合使用，支持组件的添加、移除动画。
+
+```js showLineNumbers title="测试代码"
+import React, { useState } from 'react'
+import { TransitionGroup, CSSTransition } from 'react-transition-group'
+import './styles.css'
+
+function MyComponent() {
+  const [items, setItems] = useState([1, 2, 3])
+
+  const addItem = () => {
+    setItems([...items, items.length + 1])
+  }
+
+  const removeItem = index => {
+    setItems(items.filter((_, i) => i !== index))
+  }
+
+  return (
+    <div>
+      <button onClick={addItem}>Add Item</button>
+      <TransitionGroup>
+        {items.map((item, index) => (
+          <CSSTransition key={item} timeout={300} classNames="fade">
+            <div>
+              Item {item} <button onClick={() => removeItem(index)}>Remove</button>
+            </div>
+          </CSSTransition>
+        ))}
+      </TransitionGroup>
+    </div>
+  )
+}
+
+export default MyComponent
+```
+
+2. 使用 Framer Motion
+
+2.1 介绍 Framer Motion
+
+- 定义：Framer Motion 是一个强大的动画库，允许你轻松地为 React 组件添加动画效果。它不仅支持简单的过渡动画，还支持复杂的物理效果和路径动画。
+
+- 安装：
+
+```js showLineNumbers title="测试代码"
+npm install framer-motion
+```
+
+2.2 使用 Framer Motion 实现过渡动画
+
+- 基本用法：通过 motion 组件来替代普通的 HTML 元素，并使用 initial、animate 和 exit 属性定义进入、更新和退出时的动画效果。
+
+```js showLineNumbers title="测试代码"
+import React, { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+
+function MyComponent() {
+  const [isVisible, setIsVisible] = useState(true)
+
+  return (
+    <div>
+      <AnimatePresence>
+        {isVisible && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }}>
+            Hello, world!
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <button onClick={() => setIsVisible(!isVisible)}>Toggle</button>
+    </div>
+  )
+}
+
+export default MyComponent
+```
+
+## 60.说说你对 immutable 的理解？如何应用在 react 项目中？
+
+1. Immutable 的定义
+
+Immutable 数据结构：Immutable（不可变）数据结构指的是一旦创建就不能被修改的数据结构。任何对其内容的修改操作都会返回一个新的数据结构，而不是直接修改原数据结构。
+
+优势：
+
+- 避免副作用：通过避免直接修改数据，减少了副作用和潜在的错误。
+- 提高性能：可以利用结构共享和浅比较优化性能，尤其在处理大数据集和复杂状态时。
+- 简化调试：数据的不可变性使得状态变得可预测，更容易调试和测试。
+
+2. Immutable 应用在 React 项目中
+
+```js showLineNumbers title="测试代码"
+npm install immutable
+```
+
+```js showLineNumbers title="测试代码"
+import { Map } from 'immutable'
+
+const state = Map({
+  user: Map({
+    name: 'Alice',
+    age: 25
+  })
+})
+
+// 更新状态
+const newState = state.setIn(['user', 'age'], 26)
+
+// 输出：25
+console.log(state.getIn(['user', 'age']))
+// 输出：26
+console.log(newState.getIn(['user', 'age']))
+```
+
+2. 使用 Immer
+
+```js showLineNumbers title="测试代码"
+npm install immer
+```
+
+```js showLineNumbers title="测试代码"
+import produce from 'immer'
+
+const initialState = {
+  user: {
+    name: 'Alice',
+    age: 25
+  }
+}
+
+const newState = produce(initialState, draft => {
+  draft.user.age = 26
+})
+
+// 输出：25
+console.log(initialState.user.age)
+// 输出：26
+console.log(newState.user.age)
+```
+
+## 61.React Fiber 是如何实现更新过程可控？
+
+更新过程的可控主要体现在下面几个方面：
+
+- 任务拆分
+
+在 React Fiber 机制中，它采用"化整为零"的思想，将调和阶段（Reconciler）递归遍历 VDOM 这个大任务分成若干小任务，每个任务只负责一个节点的处理。
+
+- 任务挂起、恢复、终止
+
+- workInProgress tree
+
+workInProgress 代表当前正在执行更新的 Fiber 树。在 render 或者 setState 后，会构建一颗 Fiber 树，也就是 workInProgress tree，这棵树在构建每一个节点的时候会收集当前节点的副作用，整棵树构建完成后，会形成一条完整的副作用链。
+
+- currentFiber tree
+
+currentFiber 表示上次渲染构建的 Filber 树。在每一次更新完成后 workInProgress 会赋值给 currentFiber。在新一轮更新时 workInProgress tree 再重新构建，新 workInProgress 的节点通过 alternate 属性和 currentFiber 的节点建立联系。
+
+在新 workInProgress tree 的创建过程中，会同 currentFiber 的对应节点进行 Diff 比较，收集副作用。同时也会复用和 currentFiber 对应的节点对象，减少新创建对象带来的开销。也就是说无论是创建还是更新、挂起、恢复以及终止操作都是发生在 workInProgress tree 创建过程中的。workInProgress tree 构建过程其实就是循环的执行任务和创建下一个任务。
+
+挂起
+
+当第一个小任务完成后，先判断这一帧是否还有空闲时间，没有就挂起下一个任务的执行，记住当前挂起的节点，让出控制权给浏览器执行更高优先级的任务。
+
+恢复
+
+在浏览器渲染完一帧后，判断当前帧是否有剩余时间，如果有就恢复执行之前挂起的任务。如果没有任务需要处理，代表调和阶段完成，可以开始进入渲染阶段。
+
+如何判断一帧是否有空闲时间的呢？
+
+使用前面提到的 RIC (RequestIdleCallback) 浏览器原生 API，React 源码中为了兼容低版本的浏览器，对该方法进行了 Polyfill。
+
+恢复执行的时候又是如何知道下一个任务是什么呢？
+
+答案是在前面提到的链表。在 React Fiber 中每个任务其实就是在处理一个 FiberNode 对象，然后又生成下一个任务需要处理的 FiberNode。
+
+- 任务具备优先级
+
+React Fiber 除了通过挂起，恢复和终止来控制更新外，还给每个任务分配了优先级。具体点就是在创建或者更新 FiberNode 的时候，通过算法给每个任务分配一个到期时间（expirationTime）。在每个任务执行的时候除了判断剩余时间，如果当前处理节点已经过期，那么无论现在是否有空闲时间都必须执行该任务。过期时间的大小还代表着任务的优先级。
+
+## 62.在 shouldComponentUpdate 或 componentWillUpdate 中使用 setState 会发生什么？
+
+1. shouldComponentUpdate 中使用 setState
+
+问题：shouldComponentUpdate 用于决定组件是否应该更新。如果在这个方法中调用 setState，会导致组件重新渲染，从而触发 shouldComponentUpdate 再次被调用。这样会导致无限循环，因为每次调用 setState 都会触发重新渲染和 shouldComponentUpdate 调用。
+
+2. componentWillUpdate 中使用 setState
+
+问题：componentWillUpdate 是在组件更新之前调用的。如果在这个生命周期方法中调用 setState，会导致组件在更新阶段再次调用 componentWillUpdate。这会导致额外的渲染和不必要的更新，可能会引发性能问题或意外的行为。
+
+## 63.简单介绍下 React 中的 diff 算法
+
+diff 算法主要基于三个规律：
+
+- DOM 节点的跨层级移动的操作特别少，可以忽略不计
+- 拥有相同类的两个组件将会生成相似的树形结构，拥有不同类的两个组件将会生成不同的树形结构
+- 对于同一层级的一组子节点，可以通过唯一的 id 进行区分
+
+## 64.React.PureComponent 和 React.Component 有什么区别？
+
+- React.Component：基类组件，提供默认的渲染逻辑，适用于需要完全控制渲染行为的组件。
+- React.PureComponent：在 props 或 state 没有发生变化时阻止组件重新渲染，使用浅比较进行优化，适用于性能优化需求较高的场景。

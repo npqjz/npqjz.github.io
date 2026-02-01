@@ -1,0 +1,49 @@
+framework:
+  label: '前端框架'
+  permalink: '/framework'
+  description: '关于前端框架相关的知识与文档'
+
+vue:
+  label: 'vue'
+  permalink: '/vue'
+  description: '关于vue相关的知识与文档'
+
+react:
+  label: 'react'
+  permalink: '/react'
+  description: '关于react相关的知识与文档'
+
+ds:
+  label: '数据结构'
+  permalink: '/ds'
+  description: '关于数据结构相关的知识与文档'
+
+os:
+  label: '操作系统'
+  permalink: '/os'
+  description: '关于操作系统相关的知识与文档'
+
+cn:
+  label: '计算机网络'
+  permalink: '/cn'
+  description: '关于计算机网络相关的知识与文档'
+
+coa:
+  label: '计算机组成原理'
+  permalink: '/coa'
+  description: '关于计算机组成原理相关的知识与文档'
+
+terror:
+  label: '恐怖'
+  permalink: '/terror'
+  description: '恐怖相关的番剧'
+
+RNB:
+  label: 'R&B'
+  permalink: '/RNB'
+  description: 'R&B相关的歌曲'
+
+language:
+  label: '语言'
+  permalink: '/language'
+  description: '语言相关的知识与文档'

@@ -1,0 +1,367 @@
+# 题目 1 - 题目 8
+
+## 1.如何通过 React.memo 优化条件渲染？
+
+使用 React.memo 优化条件渲染，主要是通过减少不必要的渲染来提高组件的性能。
+
+React.memo 是一个高阶组件，在组件的 props 没有变化时跳过渲染，从而避免不必要的 DOM 更新。
+
+1. React.memo 的基本原理
+
+React.memo 是对函数组件的优化。当组件的 props 没有变化时，它会跳过该组件的渲染。通常情况下，React 会重新渲染组件，即使 props 没有改变，但通过 React.memo，我们可以控制这种行为。
+
+2. 条件渲染的优化
+
+在 React 中，条件渲染通常是根据某些条件来判断是否显示某个组件，比如通过 && 或 if 来控制组件的显示与隐藏：
+
+```jsx showLineNumbers title="测试代码"
+function MyComponent({ shouldRender }) {
+  return <div>{shouldRender && <ExpensiveComponent />}</div>
+}
+```
+
+步骤 1：优化条件渲染
+
+我们可以对 ExpensiveComponent 使用 React.memo 来缓存它的渲染结果，只有当它的 props 发生变化时才重新渲染
+
+```jsx showLineNumbers title="测试代码"
+const ExpensiveComponent = React.memo(function ExpensiveComponent({ data }) {
+  console.log('ExpensiveComponent rendered')
+  return <div>{data}</div>
+})
+```
+
+步骤 2：父组件的条件渲染
+
+然后，在父组件中做条件渲染时，ExpensiveComponent 会根据 props 是否变化来决定是否重新渲染：
+
+```jsx showLineNumbers title="测试代码"
+function ParentComponent({ shouldRender, data }) {
+  return <div>{shouldRender && <ExpensiveComponent data={data} />}</div>
+}
+```
+
+自定义比较函数
+
+如果默认的浅比较不满足要求（即某些复杂的对象或深层嵌套的对象），我们可以传递一个自定义比较函数来决定是否更新组件：
+
+```jsx showLineNumbers title="测试代码"
+const ExpensiveComponent = React.memo(
+  function ExpensiveComponent({ data }) {
+    console.log('ExpensiveComponent rendered')
+    return <div>{data}</div>
+  },
+  (prevProps, nextProps) => {
+    // 自定义比较函数：只有当 data 发生变化时才重新渲染
+    return prevProps.data === nextProps.data
+  }
+)
+```
+
+## 2.redux-thunk 和 redux 是什么关系？
+
+redux-thunk
+
+异步操作：redux-thunk 是一个中间件，用于处理异步操作。它允许 Action Creators 返回函数而不是普通的 Action 对象。这个函数可以执行异步操作（如 API 请求），然后在操作完成后 dispatch 其他 Actions 来更新状态。
+
+中间件：redux-thunk 是 Redux 的中间件之一。中间件是 Redux 的一种扩展机制，用于在 dispatch Action 之前或之后插入额外的逻辑。redux-thunk 使得 Action Creators 能够返回函数而不是普通的 Action 对象。
+
+```js showLineNumbers title="没有redux-thunk"
+// Action Creator
+function fetchData() {
+  return {
+    type: 'FETCH_DATA',
+    payload: data
+  }
+}
+```
+
+```js showLineNumbers title="使用redux-thunk"
+// Action Creator with redux-thunk
+function fetchData() {
+  return function (dispatch) {
+    // 异步操作
+    fetch('https://api.example.com/data')
+      .then(response => response.json())
+      .then(data => {
+        dispatch({
+          type: 'FETCH_DATA_SUCCESS',
+          payload: data
+        })
+      })
+      .catch(error => {
+        dispatch({
+          type: 'FETCH_DATA_FAILURE',
+          payload: error
+        })
+      })
+  }
+}
+```
+
+```js showLineNumbers title="配置store"
+import { createStore, applyMiddleware } from 'redux'
+import thunk from 'redux-thunk'
+import rootReducer from './reducers'
+
+const store = createStore(rootReducer, applyMiddleware(thunk))
+```
+
+## 3.React 中，useRef、ref、forwardsRef 的区别是什么?
+
+1. useRef
+
+用途：在函数组件中创建和管理引用。useRef 返回一个可变的 ref 对象，该对象的 .current 属性可以用来访问 DOM 节点或保存任意值。
+
+```js showLineNumbers title="测试代码"
+import { useRef, useEffect } from 'react'
+
+function MyComponent() {
+  const inputRef = useRef(null)
+
+  useEffect(() => {
+    inputRef.current.focus() // 访问和操作 DOM 元素
+  }, [])
+
+  return <input ref={inputRef} />
+}
+```
+
+2. ref
+
+用途：在类组件中使用，或者通过 React.forwardRef 在函数组件中使用，来访问 DOM 节点或组件实例。
+
+```js showLineNumbers title="测试代码"
+class MyClassComponent extends React.Component {
+  constructor(props) {
+    super(props)
+    this.inputRef = React.createRef()
+  }
+
+  componentDidMount() {
+    this.inputRef.current.focus() // 访问和操作 DOM 元素
+  }
+
+  render() {
+    return <input ref={this.inputRef} />
+  }
+}
+```
+
+```js showLineNumbers title="测试代码"
+function MyFunctionComponent(props, ref) {
+  return <input ref={ref} />
+}
+const ForwardedComponent = React.forwardRef(MyFunctionComponent)
+```
+
+3.forwardRef
+
+用途：允许函数组件接收 ref 并将其转发到子组件的 DOM 元素或其他组件。
+
+```js showLineNumbers title="测试代码"
+import React, { forwardRef } from 'react'
+
+const MyComponent = forwardRef((props, ref) => <input ref={ref} {...props} />)
+
+function App() {
+  const inputRef = useRef(null)
+
+  useEffect(() => {
+    inputRef.current.focus() // 访问和操作 DOM 元素
+  }, [])
+
+  return <MyComponent ref={inputRef} />
+}
+```
+
+## 4.useEffect 的第二个参数，是如何判断实现依赖是否发生变化的？
+
+1. 基础数据类型的比较
+   对于基本数据类型（如 string、number、boolean），React 直接比较它们的值：
+
+- 相等：value1 === value2。如果两个基本数据类型的值相等，React 认为它们没有变化。
+- 不相等：如果值不相等，则认为依赖项发生了变化。
+
+2. 引用类型的比较
+
+对于引用类型（如对象、数组、函数），React 进行浅比较，即比较引用的内存地址：
+
+- 相同引用：如果对象或数组的引用没有变化（即它们仍指向同一个内存地址），React 认为依赖项没有变化。
+- 不同引用：如果对象或数组的引用发生了变化（即它们指向不同的内存地址），React 认为依赖项发生了变化。
+
+浅比较的具体方法
+
+- 对象和数组的引用比较：
+
+  - React 通过 === 运算符来比较对象或数组的引用。
+  - 这意味着即使对象或数组的内容发生了变化，只要它们的引用没有变化，React 认为它们没有变化。
+
+- 函数的引用比较：
+
+  - 函数也是通过其引用进行比较的。如果一个函数的引用在不同的渲染中保持不变，React 认为函数没有变化。
+
+```js showLineNumbers title="测试代码"
+import { useState, useEffect } from 'react'
+
+function MyComponent() {
+  const [count, setCount] = useState(0)
+  const [data, setData] = useState([])
+
+  useEffect(() => {
+    // 副作用函数将在 `count` 或 `data` 变化时重新执行
+    console.log('Effect triggered')
+  }, [count, data]) // 依赖数组
+
+  return (
+    <div>
+      <button onClick={() => setCount(count + 1)}>Increment Count</button>
+      <button onClick={() => setData([...data, count])}>Add Data</button>
+    </div>
+  )
+}
+```
+
+- 基础数据类型（count）：
+
+  - 每次点击按钮时，count 的值都会改变，React 会认为 count 发生了变化，从而触发 useEffect。
+
+- 引用类型（data）：
+
+  - 每次点击“Add Data”按钮时，data 的引用会改变（由于使用了展开运算符创建了新数组），React 会认为 data 发生了变化，从而触发 useEffect。
+
+注意事项
+
+- 数组和对象的不可变性：为确保 useEffect 能正确地检测依赖变化，通常建议使用不可变数据结构或确保数据结构的变化能够生成新的引用。
+- 避免不必要的副作用执行：在依赖数组中包含过多的依赖项，尤其是引用类型的依赖项，可能导致不必要的副作用执行，影响性能。
+
+## 5.useState 是如何实现的？
+
+1. 状态的初始化
+
+当你调用 useState 时，可以传递一个初始状态值或一个函数用于计算初始状态。React 会将这个初始状态值存储在一个内部的状态容器中。
+
+2. 内部数据结构
+
+React 使用一个叫做“Hooks List”的数据结构来管理各个组件的 Hook 状态。在每次组件渲染时，React 会使用这个数据结构来跟踪组件的 Hook 调用顺序和状态。
+
+- Fiber 树：每个组件在 React 的 Fiber 树中都有一个与之对应的 Fiber 节点。Fiber 节点中包含了该组件的状态信息和相关的 Hook 信息。
+
+- Hooks 链表：useState 和其他 Hooks 会在 Fiber 节点中按照调用顺序形成一个链表。每个 Hook 记录了其当前的状态值和更新函数。
+
+3. 状态的更新
+
+当调用 setState 时，React 会将状态更新请求加入到更新队列中。更新队列是 React 用于管理所有状态变更的机制。每当 setState 被调用时，React 会将新的状态值和当前状态值进行比较，决定是否需要触发重新渲染。
+
+```js showLineNumbers title="测试代码"
+function setState(newState) {
+  // 更新队列中加入新的状态值
+  updateQueue.push(newState)
+
+  // 标记 Fiber 节点需要重新渲染
+  scheduleUpdate()
+}
+```
+
+4. 触发重新渲染
+
+在调用 setState 后，React 会安排重新渲染过程。这包括以下几个步骤：
+
+1. 调度更新：将更新请求加入调度队列，React 会在适当的时候处理这些更新。
+1. 重新渲染组件：React 会调用组件函数，执行 useState 和其他 Hook。
+1. 比较新旧状态：React 会比较新旧状态，计算出哪些组件需要更新。
+1. 提交更新：将计算好的更新提交到 DOM 中。
+
+## 6.forwardRef 的应用场景
+
+```js showLineNumbers title="测试代码"
+import React, { forwardRef, useRef, useImperativeHandle } from 'react'
+
+// 子组件
+const Input = forwardRef((props, ref) => {
+  const inputRef = useRef(null)
+
+  useImperativeHandle(ref, () => ({
+    focus: () => {
+      inputRef.current.focus()
+    }
+  }))
+
+  return <input ref={inputRef} {...props} />
+})
+
+// 父组件
+function ParentComponent() {
+  const inputRef = useRef(null)
+
+  const handleClick = () => {
+    if (inputRef.current) {
+      inputRef.current.focus() // 调用子组件的 focus 方法
+    }
+  }
+
+  return (
+    <div>
+      <Input ref={inputRef} />
+      <button onClick={handleClick}>Focus Input</button>
+    </div>
+  )
+}
+
+export default ParentComponent
+```
+
+使用场景
+
+- 访问子组件的 DOM 节点： 当需要对子组件的 DOM 元素进行操作（例如，获取焦点、调整大小等），而这个子组件是由其他组件包裹的情况下。
+
+- 组合高阶组件和 ref： 在使用高阶组件（HOC）时，ref 不会自动转发到被包裹的组件中。使用 forwardRef 可以将 ref 转发到正确的组件或 DOM 元素。
+
+关键点
+
+- forwardRef：是一个 React 函数，用于包装组件并转发 ref。
+- useImperativeHandle：用来自定义暴露给父组件的 ref 实例。可以将特定的函数或属性暴露给父组件。
+
+## 7.React Reconciler 为何要采用 fiber 架构？
+
+1. 增量渲染
+
+- 旧版 Reconciler：一次性计算并更新整个 UI 树，可能会导致性能瓶颈，尤其是在大型应用中。
+- Fiber 架构：支持增量渲染，将渲染任务拆分为小的单元，分批执行。这样可以在长时间运行的任务中插入中断点，使得 UI 更响应式。
+
+2. 中断和优先级
+
+- 旧版 Reconciler：一旦开始更新，渲染过程无法中断，可能会阻塞用户交互。
+- Fiber 架构：允许中断和恢复工作，可以根据任务的优先级来调整渲染顺序。低优先级的任务可以在高优先级任务完成后再继续执行，提高了用户交互的流畅性。
+
+3. 任务调度
+
+- 旧版 Reconciler：没有任务调度机制，所有更新都按顺序执行。
+- Fiber 架构：使用任务调度机制（Scheduler）来管理和调度不同优先级的更新任务，确保重要任务（如用户输入、动画）优先处理。
+
+4. 异常处理
+
+- 旧版 Reconciler：异常处理能力有限，无法优雅地处理渲染过程中的错误。
+- iber 架构：允许局部错误处理，确保在渲染过程中即使发生异常，也能保证 UI 的部分更新和恢复。
+
+5. 渲染中断与恢复
+
+- 旧版 Reconciler：无法中断和恢复渲染。
+- Fiber 架构：支持在渲染过程中中断并恢复，能够平滑处理长时间运行的任务。
+
+6. 事务管理
+
+- 旧版 Reconciler：处理复杂的事务和操作较为困难。
+- Fiber 架构：将渲染任务分解为独立的事务，每个事务可以独立地管理和控制，简化了复杂操作的管理。
+
+## 8.说说 React render 阶段的执行过程
+
+React 的 render 阶段包括以下主要步骤：
+
+1. 触发和调度更新。
+2. 创建和更新 Fiber 节点。
+3. 执行组件的 render 方法，构建新的 Fiber 树。
+4. 更新 Fiber 节点，处理更新队列和副作用。
+5. 生成新的 Fiber 树，并准备提交阶段的实际 DOM 更新。
+
+这个阶段的核心任务是生成和更新虚拟 DOM，通过比较新旧 Fiber 树来计算最小的更新集合，并准备将这些更新应用到实际 DOM 上。

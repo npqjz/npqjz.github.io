@@ -1,0 +1,403 @@
+# 题目 49 - 题目 56
+
+## 49.useEffect 与 useLayoutEffect 有什么区别？
+
+共同点
+
+- 运用效果： useEffect 与 useLayoutEffect 两者都是用于处理副作用，这些副作用包括改变 DOM、设置订阅、操作定时器等。在函数组件内部操作副作用是不被允许的，所以需要使用这两个函数去处理。
+- 使用方式： useEffect 与 useLayoutEffect 两者底层的函数签名是完全一致的，都是调用的 mountEffectImpl 方法，在使用上也没什么差异，基本可以直接替换。
+
+不同点
+
+- 使用场景： useEffect 在 React 的渲染过程中是被异步调用的，用于绝大多数场景；而 useLayoutEffect 会在所有的 DOM 变更之后同步调用，主要用于处理 DOM 操作、调整样式、避免页面闪烁等问题。也正因为是同步处理，所以需要避免在 useLayoutEffect 做计算量较大的耗时任务从而造成阻塞。
+- 使用效果： useEffect 是按照顺序执行代码的，改变屏幕像素之后执行（先渲染，后改变 DOM），当改变屏幕内容时可能会产生闪烁；useLayoutEffect 是改变屏幕像素之前就执行了（会推迟页面显示的事件，先改变 DOM 后渲染），不会产生闪烁。useLayoutEffect 总是比 useEffect 先执行。
+
+## 50.React Hooks 在使用上有哪些限制？
+
+React Hooks 的限制主要有两条：
+
+- 不要在循环、条件或嵌套函数中调用 Hook；
+- 在 React 的函数组件中调用 Hook。
+
+那为什么不要在循环、条件或嵌套函数中调用 Hook 呢？因为 Hooks 的设计是类似于数组实现。在调用时按顺序加入数组中，如果使用循环、条件或嵌套函数很有可能导致数组取值错位，执行错误的 Hook。当然，实质上 React 的源码里不是数组，是链表。
+
+## 51.为什么 useState 返回的是数组而不是对象？
+
+如果 useState 返回数组，那么你可以顺便对数组中的变量命名，代码看起来也比较干净。而如果是对象的话返回的值必须和 useState 内部实现返回的对象同名，这样你只能在 function component 中使用一次，想要多次使用 useState 必须得重命名返回值。
+
+```js showLineNumbers title="测试代码"
+// 第一次使用
+const { state, setState } = useState(false)
+// 第二次使用
+const { state: counter, setState: setCounter } = useState(0)
+```
+
+当然事情总是有两面性的，使用 array 也存在一些问题：
+
+- 返回值强顺序，灵活性比较低。array[0] 为值，array[1] 为改变值的方法。
+- 返回的值基本都得使用，对于有些返回值不想使用的话代码看起来有些怪，比如只想用 setState, 就得这么写：const [, setState] = useState(false)。
+- 返回的参数不能太多，否则处理上面 2 个场景会很麻烦。
+
+## 52.Redux 中的 connect 有什么作用？
+
+connect 负责连接 React 和 Redux
+
+### 获取 state
+
+connect 通过 context 获取 Provider 中的 store，通过 store.getState() 获取整个 store tree 上所有 state
+
+### 包装原组件
+
+将 state 和 action 通过 props 的方式传入到原组件内部 wrapWithConnect 返回—个 ReactComponent 对象 Connect，Connect 重新 render 外部传入的原组件 WrappedComponent ，并把 connect 中传入的 mapStateToProps，mapDispatchToProps 与组件上原有的 props 合并后，通过属性的方式传给 WrappedComponent
+
+### 监听 store tree 变化
+
+connect 缓存了 store tree 中 state 的状态，通过当前 state 状态 和变更前 state 状态进行比较，从而确定是否调用 this.setState()方法触发 Connect 及其子组件的重新渲染
+
+## 53.Redux 和 Vuex 区别
+
+相同点
+
+- state 共享数据
+- 流程一致：定义全局 state，触发，修改 state
+- 原理相似，通过全局注入 store。
+
+不同点
+
+- 从实现原理上来说：
+  - Redux 使用的是不可变数据，而 Vuex 的数据是可变的。Redux 每次都是用新的 state 替换旧的 state，而 Vuex 是直接修改
+  - Redux 在检测数据变化的时候，是通过 diff 的方式比较差异的，而 Vuex 其实和 Vue 的原理一样，是通过 getter/setter 来比较的
+- 从表现层来说：
+  - uex 定义了 state、getter、mutation、action 四个对象；redux 定义了 state、reducer、action。
+  - uex 中 state 统一存放，方便理解；reduxstate 依赖所有 reducer 的初始值
+  - uex 有 getter,目的是快捷得到 state；redux 没有这层，react-redux mapStateToProps 参数做了这个工作。
+  - uex 中 mutation 只是单纯赋值(很浅的一层)；redux 中 reducer 只是单纯设置新 state(很浅的一层)。他俩作用类似，但书写方式不同
+  - uex 中 action 有较为复杂的异步 ajax 请求；redux 中 action 中可简单可复杂,简单就直接发送数据对象（{`type:xxx, your-data`}）,复杂需要调用异步 ajax（依赖 redux-thunk 插件）。
+  - uex 触发方式有两种 commit 同步和 dispatch 异步；redux 同步和异步都使用 dispatch
+
+通俗点理解就是，vuex 弱化 dispatch，通过 commit 进行 store 状态的一次更变；取消了 action 概念，不必传入特定的 action 形式进行指定变更；弱化 reducer，基于 commit 参数直接对数据进行转变，使得框架更加简易;
+
+### 共同思想
+
+- 单一的数据源
+- 变化可以预测
+- 本质上 ∶ redux 与 vuex 都是对 mvvm 思想的服务，将数据从视图中抽离的一种方案。
+
+## 54.mobx 和 redux 有什么区别？
+
+### 1. 设计理念
+
+Redux:
+
+- 功能：基于 Flux 架构，侧重于功能性和明确的状态管理。
+- 核心思想：单一数据源（store），状态是只读的，通过 actions 描述状态的变化，reducers 处理这些变化。
+- 不可变性：状态是不可变的，每次状态更新都需要返回一个新的状态对象。
+  MobX:
+
+- 能：基于响应式编程，侧重于简化状态管理和组件之间的状态共享。
+- 心思想：状态可以是可变的，通过 observable 使状态成为响应式，组件会自动反应状态变化。
+- 变性：状态是可变的，直接修改状态并不会造成副作用。
+
+### 2. 状态管理
+
+Redux:
+
+- 单一 store：整个应用的状态存储在一个全局的 store 中。
+- 纯函数（reducers）：状态的更新通过纯函数 reducers 进行，接收当前状态和 action，返回新的状态。
+- 不可变更新：状态更新需要创建新的状态对象，避免直接修改现有状态。
+
+MobX:
+
+- 多个 store：可以有多个 store，每个 store 管理独立的状态。
+- 响应式状态：状态使用 observable 标记，组件通过 observer 进行响应式更新。状态的更新是通过直接修改变量完成的。
+- 自动反应：组件自动跟踪状态变化，无需手动触发更新。
+
+### 3. 中间件和异步处理
+
+Redux:
+
+- 中间件：支持中间件（如 redux-thunk、redux-saga）来处理异步操作和其他副作用。
+- 中间件的作用：用于在 dispatch 和 reducer 之间插入额外的逻辑，例如异步操作、日志记录等。
+
+MobX:
+
+- 内置支持：MobX 自身不需要中间件来处理异步操作。可以使用 async/await 直接在 action 中处理异步请求。
+- 简洁性：异步操作可以通过直接在 action 中进行，简化了状态管理。
+
+### 4. 学习曲线和复杂性
+
+Redux:
+
+- 学习曲线：学习和使用 Redux 可能需要较多的时间和精力，尤其是在配置中间件和理解 actions、reducers 的概念时。 -复杂性：对于小型项目，Redux 的样板代码可能显得冗余，但在大型项目中，它提供了一种清晰的状态管理模式。
+
+MobX:
+
+- 学习曲线：MobX 的学习曲线相对较平缓，因为它更接近于自然的 JavaScript 编程模型。
+- 简洁性：提供了一种更直观的方式来处理状态和反应式编程，适合于中小型项目和快速开发。
+
+### 5. 开发工具和调试
+
+- Redux:
+
+  - 开发工具：Redux 提供了强大的开发工具（如 Redux DevTools），可以方便地查看状态变化、调试和回溯状态。
+  - 调试：可以很容易地追踪每个 action 和 state 的变化，查看状态的历史记录。
+
+- MobX:
+
+  - 开发工具：MobX 的开发工具（如 MobX Developer Tools）也提供了一些调试功能，但相对来说不如 Redux 的工具成熟。
+  - 调试：调试可能需要更多的依赖于代码的日志和自定义工具，状态变化可能不如 Redux 那样透明。
+
+总结
+
+- Redux 更适合于需要明确和可预测状态管理的应用，特别是大型应用。它强调不可变性和单一数据源，通过中间件处理异步操作和副作用。
+- MobX 更适合于需要简单和响应式状态管理的应用，特别是中小型项目。它提供了一种直接修改状态并自动反应的机制，简化了异步处理。
+
+## 54.说说对受控组件和非受控组件的理解，以及应用场景？
+
+受控组件：
+
+受控组件，简单来讲，就是受我们控制的组件，组件的状态全程响应外部数据
+
+```js showLineNumbers title="测试代码"
+class TestComponent extends React.Component {
+  constructor(props) {
+    super(props)
+    this.state = { username: 'lindaidai' }
+  }
+  render() {
+    return <input name="username" value={this.state.username} />
+  }
+}
+```
+
+这时候当我们在输入框输入内容的时候，会发现输入的内容并无法显示出来
+
+这是因为 value 被 this.state.username 所控制住。当用户输入新的内容时，this.state.username 并不会自动更新，这样的话 input 内的内容也就不会变了
+
+如果想要解除被控制，可以为 input 标签设置 onChange 事件，输入的时候触发事件函数，在函数内部实现 state 的更新，从而导致 input 框的内容页发现改变
+
+因此，受控组件我们一般需要初始状态和一个状态更新事件函数
+
+非受控组件：
+
+非受控组件，简单来讲，就是不受我们控制的组件
+
+一般情况是在初始化的时候接受外部数据，然后自己在内部存储其自身状态
+
+```js showLineNumbers title="测试代码"
+import React, { Component } from 'react'
+
+export class UnControll extends Component {
+  constructor(props) {
+    super(props)
+    this.inputRef = React.createRef()
+  }
+  handleSubmit = e => {
+    console.log('我们可以获得input内的值为', this.inputRef.current.value)
+    e.preventDefault()
+  }
+  render() {
+    return (
+      <form onSubmit={e => this.handleSubmit(e)}>
+        <input defaultValue="lindaidai" ref={this.inputRef} />
+        <input type="submit" value="提交" />
+      </form>
+    )
+  }
+}
+```
+
+## 55.说说 React render 方法的原理？在什么时候会被触发？
+
+render 函数里面可以编写 JSX，转化成 createElement 这种形式，用于生成虚拟 DOM，最终转化成真实 DOM
+
+在 React 中，类组件只要执行了 setState 方法，就一定会触发 render 函数执行，函数组件使用 useState 更改状态不一定导致重新 render
+
+组件的 props 改变了，不一定触发 render 函数的执行，但是如果 props 的值来自于父组件或者祖先组件的 state
+
+在这种情况下，父组件或者祖先组件的 state 发生了改变，就会导致子组件的重新渲染
+
+所以，一旦执行了 setState 就会执行 render 方法，useState 会判断当前值有无发生改变确定是否执行 render 方法，一旦父组件发生渲染，子组件也会渲染
+
+## 56.说说你对 React Router 的理解？常用的 Router 组件有哪些？
+
+### BrowserRouter、HashRouter
+
+Router 中包含了对路径改变的监听，并且会将相应的路径传递给子组件
+
+BrowserRouter 是 history 模式，HashRouter 模式
+
+使用两者作为最顶层组件包裹其他组件
+
+```js showLineNumbers title="测试代码"
+import { BrowserRouter as Router } from 'react-router-dom'
+
+export default function App() {
+  return (
+    <Router>
+      <main>
+        <nav>
+          <ul>
+            <li>
+              <a href=" ">Home</a>
+            </li>
+            <li>
+              <a href="/about">About</a>
+            </li>
+            <li>
+              <a href="/contact">Contact</a>
+            </li>
+          </ul>
+        </nav>
+      </main>
+    </Router>
+  )
+}
+```
+
+### Route
+
+Route 用于路径的匹配，然后进行组件的渲染，对应的属性如下：
+
+- path 属性：用于设置匹配到的路径
+- component 属性：设置匹配到路径后，渲染的组件
+- render 属性：设置匹配到路径后，渲染的内容
+- exact 属性：开启精准匹配，只有精准匹配到完全一致的路径，才会渲染对应的组件
+
+```js showLineNumbers title="测试代码"
+import { BrowserRouter as Router, Route } from 'react-router-dom'
+
+export default function App() {
+  return (
+    <Router>
+      <main>
+        <nav>
+          <ul>
+            <li>
+              <a href="/">Home</a>
+            </li>
+            <li>
+              <a href="/about">About</a>
+            </li>
+            <li>
+              <a href="/contact">Contact</a>
+            </li>
+          </ul>
+        </nav>
+        <Route path="/" render={() => <h1>Welcome!</h1>} />
+      </main>
+    </Router>
+  )
+}
+```
+
+### Link、NavLink
+
+通常路径的跳转是使用 Link 组件，最终会被渲染成 a 元素，其中属性 to 代替 a 标题的 href 属性
+
+NavLink 是在 Link 基础之上增加了一些样式属性，例如组件被选中时，发生样式变化，则可以设置 NavLink 的一下属性：
+
+- activeStyle：活跃时（匹配时）的样式
+- activeClassName：活跃时添加的 class
+
+```js showLineNumbers title="测试代码"
+<NavLink to="/" exact activeStyle={{color: "red"}}>首页</NavLink>
+<NavLink to="/about" activeStyle={{color: "red"}}>关于</NavLink>
+<NavLink to="/profile" activeStyle={{color: "red"}}>我的</NavLink>
+```
+
+通过 Route 作为顶层组件包裹其他组件后,页面组件就可以接收到一些路由相关的东西，比如 props.history
+
+```js showLineNumbers title="测试代码"
+const Contact = ({ history }) => (
+  <Fragment>
+    <h1>Contact</h1>
+    <button onClick={() => history.push('/')}>Go to home</button>
+    <FakeText />
+  </Fragment>
+)
+```
+
+### redirect
+
+用于路由的重定向，当这个组件出现时，就会执行跳转到对应的 to 路径中，如下例子：
+
+```js showLineNumbers title="测试代码"
+const About = ({
+  match: {
+    params: { name }
+  }
+}) => (
+  // props.match.params.name
+  <Fragment>
+    {name !== 'tom' ? <Redirect to="/" /> : null}
+    <h1>About {name}</h1>
+    <FakeText />
+  </Fragment>
+)
+```
+
+### switch
+
+swich 组件的作用适用于当匹配到第一个组件的时候，后面的组件就不应该继续匹配
+
+```js showLineNumbers title="测试代码"
+<Switch>
+  <Route exact path="/" component={Home} />
+  <Route path="/about" component={About} />
+  <Route path="/profile" component={Profile} />
+  <Route path="/:userid" component={User} />
+  <Route component={NoMatch} />
+</Switch>
+```
+
+### useHistory
+
+useHistory 可以让组件内部直接访问 history，无须通过 props 获取
+
+```js showLineNumbers title="测试代码"
+import { useHistory } from 'react-router-dom'
+
+const Contact = () => {
+  const history = useHistory()
+  return (
+    <Fragment>
+      <h1>Contact</h1>
+      <button onClick={() => history.push('/')}>Go to home</button>
+    </Fragment>
+  )
+}
+```
+
+useParams
+
+```js showLineNumbers title="测试代码"
+const About = () => {
+  const { name } = useParams()
+  return (
+    // props.match.params.name
+    <Fragment>
+      {name !== 'John Doe' ? <Redirect to="/" /> : null}
+      <h1>About {name}</h1>
+      <Route component={Contact} />
+    </Fragment>
+  )
+}
+```
+
+useLocation
+
+```js showLineNumbers title="测试代码"
+import { useLocation } from 'react-router-dom'
+
+const Contact = () => {
+  const { pathname } = useLocation()
+
+  return (
+    <Fragment>
+      <h1>Contact</h1>
+      <p>Current URL: {pathname}</p>
+    </Fragment>
+  )
+}
+```

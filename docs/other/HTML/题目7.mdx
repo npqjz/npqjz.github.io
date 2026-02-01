@@ -1,0 +1,107 @@
+# 题目 31 - 题目 31
+
+## 31.HTML 标签中的 src 和 href 有什么区别
+
+src 属性
+
+- 用途：用于指定外部资源的 URL，通常用在 `<img>、<script>、<iframe>、<audio> 和 <video>` 等标签中。
+- 功能：告诉浏览器从哪个 URL 加载资源。加载的资源会嵌入到当前页面中或执行。例如：
+  - `<img src="image.jpg" alt="Description">`：加载并显示图像。
+  - `<script src="script.js"></script>`：加载并执行 JavaScript 文件。
+  - `<iframe src="https://example.com"></iframe>`：嵌入外部网页。 <br />
+
+href 属性
+
+- 用途：用于定义超链接的目标 URL，通常用在` <a>`（锚点）和 ` <link>`（链接） 标签中。
+- 功能：指定链接或引用的资源地址。用于页面间的导航、资源引入等。例如：
+  - `<a href="https://example.com">Visit Example</a>`：创建一个指向外部网站的超链接。
+  - `<link rel="stylesheet" href="styles.css">`：引入外部 CSS 样式表。 <br />
+
+区别
+
+1. 应用场景：
+
+- src：用于嵌入或加载外部资源（如图像、脚本、音频等）。
+- href：用于定义超链接和引用外部资源（如导航链接、样式表等）。
+
+2. 资源加载方式：
+
+- src：浏览器会立即请求并加载指定的资源，这会影响页面的呈现或功能。
+- href：主要用于超链接或资源引用，浏览器会在用户点击链接时进行导航或加载资源。
+
+3. 标签支持：
+
+- src：用于 `<img>、<script>、<iframe>、<audio>、<video>` 等标签。
+- href：用于`<a> 和 <link>`标签。
+
+## 32.iframe
+
+优点
+
+1. 隔离内容：
+
+   - 安全性：通过` <iframe>` 可以将外部内容与主页面隔离，从而减少潜在的安全风险（如跨站脚本攻击）。
+   - 样式和脚本隔离：外部页面的样式和脚本不会直接影响主页面。 <br />
+
+2. 嵌入外部资源：
+
+   - 内容集成：可以轻松地将外部网页或应用（如地图、视频、广告）嵌入到当前页面中，而无需重新开发相同的功能。
+   - 第三方服务：集成第三方服务（如支付网关、社交媒体分享按钮）而不需要直接控制其代码。
+
+3. 独立滚动：
+
+   - 滚动控制：内嵌的内容可以独立于主页面滚动，有助于创建自定义滚动区域。 4.简化布局：
+
+   - 多样布局：可以用来实现复杂的布局，例如将广告、视频、或外部应用嵌入到页面的特定部分。
+
+4. 简化测试：
+
+   - 单元测试：在开发和测试中，可以单独测试嵌入的内容，确保它在不同环境中的一致性和功能。
+
+缺点
+
+1. 性能问题：
+
+   - 页面加载：`<iframe> `的内容需要额外的 HTTP 请求，可能会影响页面加载速度和性能。
+   - 资源消耗：加载多个` <iframe>` 可能会增加浏览器的内存和 CPU 使用量。
+
+2. 跨域问题：
+
+   - 限制：与` <iframe>` 中的内容进行跨域交互（如操作父页面）可能会受到浏览器的同源策略限制，导致复杂的跨域通信问题。
+
+3. SEO 和可访问性：
+
+   - SEO：搜索引擎通常不会索引` <iframe>` 中的内容，可能会影响搜索引擎优化（SEO）。
+   - 可访问性：一些用户可能无法通过屏幕阅读器等工具访问` <iframe>` 中的内容，影响可访问性。
+
+4. 用户体验：
+
+   - 滚动条和边框：`<iframe>` 默认会显示滚动条和边框，这可能影响页面的视觉美观。需要额外的 CSS 样式调整来隐藏这些元素。
+   - 响应式设计：在响应式设计中处理` <iframe>` 的尺寸和布局可能比较麻烦。
+
+5. 安全隐患：
+
+   - 点击劫持：恶意网站可能使用` <iframe>` 嵌套其内容来进行点击劫持攻击，利用用户的点击意图执行恶意操作。
+
+## 33.label 元素有什么用
+
+label 标签来定义表单控制间的关系。当用户选择该标签时，浏览器会自动将焦点转到和标签相关的表单控件上。
+
+```html showLineNumbers title="测试代码"
+<label for="Name">Number:</label>
+<input type="text" name="Name" id="Name" />
+
+<label>Date:<input type="text" name="B" /></label>
+```
+
+## 34.常用的 meta 元素有哪些
+
+字符集：`<meta charset="UTF-8">`
+描述：`<meta name="description" content="...">`
+关键词：`<meta name="keywords" content="...">`
+作者：`<meta name="author" content="...">`
+视口：`<meta name="viewport" content="...">`
+刷新和重定向：`<meta http-equiv="refresh" content="...">`
+网页权限设置：`<meta name="robots" content="...">`
+兼容性：`<meta http-equiv="X-UA-Compatible" content="IE=edge">`
+Open Graph 和 Twitter Card 元素用于社交媒体优化：`<meta property="og:image" content="...">、<meta name="twitter:card" content="summary_large_image">`

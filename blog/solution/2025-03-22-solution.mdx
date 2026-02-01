@@ -1,0 +1,49 @@
+---
+title: 今日总结-2025-03-22
+authors: qjz
+tags: [solution]
+---
+
+## UDP 是基于报文的协议，TCP 是基于字节流传输的协议
+
+## 关于 InnoDB 和 MYISAM 的区别
+
+- MyISAM 支持全文索引，用于查找文本中的关键词，而 InnoDB 在 MySQL5.6 版本后也支持全文索引。
+- InnoDB 支持事务，对于每一条 SQL 语言都默认封装成事务，而 MyISAM 不支持事务。
+- InnoDB 支持外键，而 MyISAM 不支持外键，因此含有外键的 InnoDB 表不能转换为 MYISAM 表。
+- InnoDB 支持行级锁和表级锁，而 MyISAM 支持表级锁
+
+## 清除浮动
+
+- 额外标签法： 子元素后添加标签“<div style={{clear:"both"}}></div>”
+- BFC 法：父元素添加属性“overflow:hidden;”
+
+## meta 标签的取值
+
+- content-type 规定文档的字符编码。
+- default-style 规定要使用的预定义的样式表。
+- refresh 定义文档自动刷新的时间间隔。
+
+## instanceof
+
+```js showLineNumbers title="测试代码"
+function func1() {}
+function func2() {}
+func1.prototype = func2.prototype = {}
+const son = new func1()
+console.log(son instanceof func1, son instanceof func2) // true，true
+```
+
+## ||运算符对于 this 的影响
+
+```js showLineNumbers title="测试代码"
+let method
+let obj = {
+  go() {
+    console.log(this)
+  }
+}
+obj.go()
+;(method = obj.go)()
+;(obj.go || obj.stop)() // window，obj.go会在运算后丢失this的指向
+```

@@ -1,0 +1,297 @@
+---
+title: 今日总结-2025-03-26
+authors: qjz
+tags: [solution]
+---
+
+## 路由模式中，webHistory 和 webHash 的区别
+
+### hash 模式
+
+- 优点
+  - 容性强，兼容性达到了 IE8
+  - 发送 ajax 和资源请求外不会发送其他多余请求
+  - 变#后的路径、不会自动刷新页面
+  - 需服务端进行配合
+- 缺点
+  - 访问路径上包含#,不美观
+  - 对于需要锚点功能的需求会与当前路由机制发生冲突
+  - 重定向操作时，后段无法获取 url 完整路径。
+
+### history 模式
+
+- 优点
+  - 符合 url 地址规范, 不需要#, 使用起来比较美观
+  - 可以使用 history.state 获取完整的路由信息
+  - 后端可以获取到完整的路由信息
+- 缺点
+  - 兼容性只到 IE10
+  - 改变 url 路径后、会重新请求资源。
+  - 若访问的路由地址不存在时、会报 404,需服务端配合支持重定向返回统一的 404 页面。
+
+### 原理
+
+- hash 模式灵活运用了 html 的瞄点功能、改变#后的路径本质上是更换了当前页面的瞄点，所以不会刷新页面。
+- history 是使用了 H5 提供的 pushState() 和 replaceState()，允许开发者直接更改前端路由，即更新浏览器 URL 地址而不重新发起请求(将 url 替换并且不刷新页面)。
+
+## setTimeout 实现 setInterval
+
+```js showLineNumbers title="测试代码"
+function customSetInterval(callback, interval) {
+  function intervalFunction() {
+    callback()
+    setTimeout(intervalFunction, interval)
+  }
+  setTimeout(intervalFunction, interval)
+}
+
+// 使用 customSetInterval 模拟 setInterval
+customSetInterval(() => {
+  console.log('模拟的 setInterval，定时任务执行中...')
+}, 1000)
+```
+
+## 模板引擎实现
+
+```js showLineNumbers title="测试代码"
+function render(template, data) {
+  return template.replace(/{{(.*?)}}/g, (match, key) => {
+    // 去除键的前后空格
+    key = key.trim()
+    // 查找数据中是否有对应的值，如果没有则返回 'undefined'
+    return key in data ? data[key] : 'undefined'
+  })
+}
+
+// 示例
+let template = '我是{{name}}，年龄{{age}}，性别{{sex}}'
+let data = {
+  name: '姓名',
+  age: 18
+}
+
+console.log(render(template, data)) // 输出：我是姓名，年龄18，性别undefined
+```
+
+## 驼峰转下划线，下划线转驼峰
+
+```js showLineNumbers title="测试代码"
+// 下划线转驼峰
+function snakeToCamel(snakeStr) {
+  return snakeStr.replace(/(_\w)/g, match => {
+    return match[1].toUpperCase()
+  })
+}
+
+// 驼峰转下划线
+function camelToSnake(camelStr) {
+  return camelStr.replace(/([A-Z])/g, match => {
+    return '_' + match.toLowerCase()
+  })
+}
+
+// 测试
+console.log(snakeToCamel('hello_world_example')) // 输出: helloWorldExample
+console.log(camelToSnake('helloWorldExample')) // 输出: hello_world_example
+```
+
+## Promise 实现 XMLHTTPRequest
+
+```js showLineNumbers title="测试代码"
+function ajaxRequest(url, method = 'GET', data = null) {
+  // xhr：open,onreadystatechange,send error
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open(method, url, true)
+
+    xhr.onreadystatechange = function () {
+      if (xhr.readyState === 4) {
+        // 请求完成
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve(xhr.responseText) // 请求成功，解析响应数据
+        } else {
+          reject(new Error(`Request failed with status code ${xhr.status}`)) // 请求失败，返回错误信息
+        }
+      }
+    }
+
+    xhr.onerror = function () {
+      reject(new Error('Network error')) // 网络错误
+    }
+
+    if (method === 'POST' && data) {
+      xhr.setRequestHeader('Content-Type', 'application/json')
+      xhr.send(JSON.stringify(data)) // 发送 POST 请求数据
+    } else {
+      xhr.send() // 发送 GET 请求
+    }
+  })
+}
+
+// 使用示例
+const url = 'https://jsonplaceholder.typicode.com/posts'
+const data = {
+  title: 'foo',
+  body: 'bar',
+  userId: 1
+}
+
+ajaxRequest(url, 'POST', data)
+  .then(response => {
+    console.log('Success:', response)
+  })
+  .catch(error => {
+    console.error('Error:', error)
+  })
+```
+
+## 扁平化数组
+
+```js showLineNumbers title="flat方法处理"
+const arr = [1, [2, [3, [4, 5]]]]
+const flattenedArr = arr.flat(Infinity)
+console.log(flattenedArr) // 输出: [1, 2, 3, 4, 5]
+```
+
+```js showLineNumbers title="递归扁平化数组"
+function flattenArray(arr) {
+  return arr.reduce((acc, val) => (Array.isArray(val) ? acc.concat(flattenArray(val)) : acc.concat(val)), [])
+}
+
+const arr = [1, [2, [3, [4, 5]]]]
+const flattenedArr = flattenArray(arr)
+console.log(flattenedArr) // 输出: [1, 2, 3, 4, 5]
+```
+
+```js showLineNumbers title="堆栈处理大数组"
+function flattenArray(arr) {
+  const stack = [...arr]
+  const result = []
+
+  while (stack.length) {
+    const next = stack.pop()
+    if (Array.isArray(next)) {
+      stack.push(...next) // 压回到堆栈中
+    } else {
+      result.push(next)
+    }
+  }
+
+  return result.reverse() // 因为堆栈是 LIFO 结构，需要反转结果数组
+}
+
+const arr = [1, [2, [3, [4, 5]]]]
+const flattenedArr = flattenArray(arr)
+console.log(flattenedArr) // 输出: [1, 2, 3, 4, 5]
+```
+
+## 模拟实现 new 操作符
+
+```js showLineNumbers title="测试代码"
+function myNew(constructor, ...args) {
+  // 1. 创建一个空的简单 JavaScript 对象
+  const obj = {}
+
+  // 2. 将这个空对象的原型指向构造函数的 prototype 属性
+  Object.setPrototypeOf(obj, constructor.prototype)
+
+  // 3. 将这个空对象作为 this 的上下文执行构造函数
+  const result = constructor.apply(obj, args)
+
+  // 4. 如果构造函数返回一个对象，则返回该对象；否则，返回这个新创建的对象
+  return result !== null && (typeof result === 'object' || typeof result === 'function') ? result : obj
+}
+
+// 测试
+function Person(name, age) {
+  this.name = name
+  this.age = age
+}
+
+const person = myNew(Person, 'Yupi', 18)
+console.log(person) // 输出: Person { name: 'Yupi', age: 18 }
+console.log(person instanceof Person) // 输出: true
+```
+
+## 判断对象是否存在循环引用
+
+```js showLineNumbers title="测试代码"
+function hasCircularReference(obj) {
+  // 使用 Set 记录访问过的对象
+  const seenObjects = new Set() // const seenObjects = new WeakSet()
+
+  function detect(obj) {
+    // 如果 obj 不是对象或为 null，直接返回 false
+    if (obj === null || typeof obj !== 'object') {
+      return false
+    }
+
+    // 如果对象已经在 Set 中，说明存在循环引用
+    if (seenObjects.has(obj)) {
+      return true
+    }
+
+    // 将对象加入 Set
+    seenObjects.add(obj)
+
+    // 递归检查对象的每个属性
+    for (let key in obj) {
+      if (obj.hasOwnProperty(key) && detect(obj[key])) {
+        return true
+      }
+    }
+
+    // 检查完毕后，将对象从 Set 中移除
+    seenObjects.delete(obj) // 如果使用的 WeakSet，则这句代码不用添加
+
+    return false
+  }
+
+  return detect(obj)
+}
+
+// 测试
+const obj1 = {}
+obj1.a = obj1 // 循环引用
+console.log(hasCircularReference(obj1)) //  true
+
+const obj2 = { a: 1, b: { c: 2 } }
+console.log(hasCircularReference(obj2)) //  false
+
+const obj3 = { a: 1 }
+obj3.b = obj3 // 循环引用
+console.log(hasCircularReference(obj3)) //  true
+```
+
+## 格式化日期
+
+```js showLineNumbers title="测试代码"
+function formatDate(date, format) {
+  // 获取日期的各个部分
+  const year = date.getFullYear()
+  const month = (date.getMonth() + 1).toString().padStart(2, '0') // 月份从0开始，需要加1
+  const day = date.getDate().toString().padStart(2, '0')
+  const hours = date.getHours().toString().padStart(2, '0')
+  const minutes = date.getMinutes().toString().padStart(2, '0')
+  const seconds = date.getSeconds().toString().padStart(2, '0')
+
+  // 定义格式化规则
+  const formatMap = {
+    YYYY: year,
+    MM: month,
+    DD: day,
+    HH: hours,
+    mm: minutes,
+    ss: seconds
+  }
+
+  // 替换格式字符串中的占位符
+  return format.replace(/YYYY|MM|DD|HH|mm|ss/g, match => formatMap[match])
+}
+
+// 测试
+const date = new Date()
+console.log(formatDate(date, 'YYYY-MM-DD')) // 输出: 2024-08-13
+console.log(formatDate(date, 'MM/DD/YYYY')) // 输出: 08/13/2024
+console.log(formatDate(date, 'DD-MM-YYYY HH:mm:ss')) // 输出: 13-08-2024 22:29:29
+```

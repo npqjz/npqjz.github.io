@@ -1,0 +1,478 @@
+# 题目 9-题目 16
+
+## 9.VUE2 的响应式原理中 Object.defineProperty 有什么缺陷
+
+1. 深度检测： Vue 2 中对于对象的处理是递归的；对于每个属性，Vue 会逐层使用 Object.defineProperty 将其转换成 getter/setter。这样，当你访问或修改嵌套较深的属性时（如 a.b.c），Vue 已经提前将 a、a.b 和 a.b.c 的属性转换为响应式，能够追踪它们的变化。
+
+2. 数组限制： Object.defineProperty 无法检测到数组索引的变化，因此 Vue 重写了数组的变异方法（如 push、pop、splice 等）来实现对数组的响应式监听。
+
+3. 对象属性添加或删除的限制： 因为 Object.defineProperty 只能在初始化的时候应用于属性，当你在一个已经创建的 Vue 实例上添加新属性时，这个新属性是非响应式的。如果你想要它是响应式的，需要使用 Vue.set()或 this.$set()方法添加新属性。
+
+4. 性能问题： 因为 Object.defineProperty 是递归地对对象的每一个属性进行处理，所以在处理具有大量属性或深层嵌套对象时，可能会有较大的性能开销。
+
+## 10.vue 文件中，在 v-for 时给每项元素绑定事件需要用事件代理吗，为什么？
+
+在 Vue 文件中，v-for 遍历数组时，为每项元素绑定事件通常不需要事件代理，但使用事件代理有其优势。这里是两种方式的对比：
+
+```js showLineNumbers title="测试代码"
+<div v-for="item in items" :key="item.id">
+  <button @click="handleClick(item)">Click me</button>
+</div>
+```
+
+优点：
+
+- 简洁：直接在每个元素上绑定事件，代码易于理解。
+- 独立处理：每个元素的事件处理函数可以独立定义和处理。 <br />
+
+缺点：
+
+- 性能问题：如果列表非常大（如上万项），每个元素上都会绑定事件，可能导致性能开销和内存占用增加。
+
+事件代理
+
+```js showLineNumbers title="测试代码"
+<div @click="handleParentClick">
+  <div v-for="item in items" :key="item.id">
+    <button :data-id="item.id">Click me</button>
+  </div>
+</div>
+```
+
+优点：
+
+- 性能优化：只在一个父元素上绑定事件，减少了绑定的事件处理函数数量，适用于大型列表。
+- 内存使用：降低内存消耗，因为不需要为每个元素分配一个事件处理函数。 <br />
+
+缺点：
+
+- 代码复杂度：处理事件逻辑变得复杂，需要通过事件目标属性（如 data-id）来判断和处理具体的元素。
+
+## 11.vue3 的响应式库是独立出来的，如果单独使用是什么样的效果
+
+在 Vue 3 中，响应式系统被抽离到一个独立的库中，名为 @vue/reactivity。这个库可以单独使用来管理响应式状态，类似于 Vue 的响应式系统，但不依赖于 Vue 组件或 Vue 实例。
+
+1. 创建响应式对象：
+
+使用 reactivity 库可以创建响应式对象，类似于 Vue 的 ref 和 reactive。
+
+```js showLineNumbers title="测试代码"
+import { reactive, effect } from '@vue/reactivity'
+
+const state = reactive({
+  count: 0
+})
+
+effect(() => {
+  console.log(`Count is: ${state.count}`)
+})
+
+state.count++
+// 输出: Count is: 1
+```
+
+2. 使用 ref：
+
+对于基本类型的数据，可以使用 ref 来创建响应式数据。
+
+```js showLineNumbers title="测试代码"
+import { ref } from '@vue/reactivity'
+
+const count = ref(0)
+
+effect(() => {
+  console.log(`Count is: ${count.value}`)
+})
+
+count.value++
+// 输出: Count is: 1
+```
+
+3. 依赖追踪和计算属性：
+
+使用 effect 可以创建响应式的副作用，类似于 Vue 组件中的计算属性。
+
+```js showLineNumbers title="测试代码"
+import { reactive, effect, computed } from '@vue/reactivity'
+
+const state = reactive({
+  count: 0
+})
+
+const doubled = computed(() => state.count * 2)
+
+effect(() => {
+  console.log(`Doubled count is: ${doubled.value}`)
+})
+
+state.count++
+// 输出: Doubled count is: 2
+```
+
+## 12.vue 是如何识别和解析指令的？
+
+1. 编译阶段
+   在 Vue 中，模板会被编译成 JavaScript 渲染函数。编译过程包括以下几个步骤：
+
+   1.1 模板解析
+
+   Vue 使用 compiler（编译器）将模板字符串转换成抽象语法树（AST）。在这个阶段，模板中的所有指令、元素、插值等都会被解析成 AST 节点。
+
+   ```js showLineNumbers title="测试代码"
+   const ast = parse(template) // 将模板转换为 AST
+   ```
+
+   1.2 指令处理
+
+   在解析过程中，Vue 会检查 AST 节点的属性，识别指令并将它们转换成指令对象。每个指令对象都包含处理该指令的逻辑，比如 v-if 指令会被处理成一个条件判断节点。
+
+   ```js showLineNumbers title="测试代码"
+   const directives = {
+     'v-if': processIf,
+     'v-for': processFor,
+     'v-bind': processBind,
+     'v-model': processModel
+     // 其他指令
+   }
+   function processIf(node, dir) {
+     // 处理 v-if 指令的逻辑
+   }
+   function processFor(node, dir) {
+     // 处理 v-for 指令的逻辑
+   }
+   ```
+
+   1.3 生成渲染函数
+
+   经过处理的 AST 会被转换成渲染函数，这个函数用于创建虚拟 DOM。渲染函数中会包含指令的逻辑，例如，v-if 的条件判断逻辑会被编译到渲染函数中。
+
+   ```js showLineNumbers title="测试代码"
+   const renderFunction = generateRenderFunction(ast) // 生成渲染函数
+   ```
+
+2. 运行时阶段
+   在运行时，Vue 使用渲染函数来生成虚拟 DOM。每当数据发生变化时，Vue 会重新渲染组件，并根据指令的逻辑来更新视图。
+
+   2.1 指令更新
+
+   Vue 在虚拟 DOM 的 patch 阶段，会根据指令的逻辑来更新实际的 DOM。例如，对于 v-if 指令，Vue 会根据条件判断是否在 DOM 中插入或删除节点。
+
+   ```js showLineNumbers title="测试代码"
+   function patch(oldVNode, newVNode) {
+     // 更新虚拟 DOM
+     // 根据指令逻辑更新实际 DOM
+   }
+   ```
+
+   2.2 生命周期钩子
+
+   某些指令可能需要在组件的生命周期钩子中进行处理。例如，v-show 指令会根据绑定的条件来控制元素的 display 属性，这会在组件的生命周期中进行设置。
+
+   ```js showLineNumbers title="测试代码"
+   function updateDisplay(el, value) {
+     el.style.display = value ? '' : 'none'
+   }
+   ```
+
+## 12.Vue 项目中，你做过哪些性能优化？
+
+1. 组件优化
+
+- 使用 v-show 替代 v-if：v-show 仅切换 display 属性，而 v-if 会添加和删除 DOM 元素，适用于频繁切换的组件。
+- 组件懒加载：利用 Vue 的异步组件加载功能 (defineAsyncComponent) 或 webpack 的代码分割（dynamic imports）来减少初始加载时间。
+
+```js showLineNumbers title="测试代码"
+const AsyncComponent = defineAsyncComponent(() => import('./components/AsyncComponent.vue'))
+```
+
+```js showLineNumbers title="测试代码"
+<router-view v-if="componentLoaded" />
+```
+
+- 避免不必要的重渲染：通过 computed 属性避免不必要的组件更新。
+
+```js showLineNumbers title="测试代码"
+computed: {
+  filteredItems() {
+    return this.items.filter(item => item.active);
+  }
+}
+```
+
+2. 性能分析
+
+- 使用 Vue Devtools：检查组件的渲染性能、事件监听和状态管理。
+- 浏览器开发者工具：利用 Performance 面板分析应用的性能瓶颈。
+
+3. 减少计算量
+
+- 使用 computed 代替 methods：computed 是基于依赖的缓存计算结果，而 methods 每次调用都会重新计算。
+
+```js showLineNumbers title="测试代码"
+computed: {
+  itemCount() {
+    return this.items.length;
+  }
+}
+```
+
+4. 优化事件处理
+
+- 防止不必要的事件触发：使用事件修饰符（如 .stop、.prevent）来优化事件处理。
+
+```js showLineNumbers title="测试代码"
+<button @click.stop="handleClick">Click Me</button>
+```
+
+- 节流和防抖：对频繁触发的事件（如滚动、输入）使用节流或防抖技术
+
+```js showLineNumbers title="测试代码"
+methods: {
+  handleScroll: _.throttle(function () {
+    // handle scroll event
+  }, 200)
+}
+```
+
+8. 缓存和懒加载
+
+- 图片和静态资源缓存：利用浏览器缓存策略或 CDN 来加速静态资源的加载。
+- 懒加载：对图片和组件使用懒加载技术。
+
+```js showLineNumbers title="测试代码"
+<img v-lazy="image.url" />
+```
+
+## 13.如何在 Vue2 动态给 data 添加一个新的属性
+
+Vue 不允许在已经创建的实例上动态添加新的响应式属性
+
+若想实现数据与视图同步更新，可采取下面三种解决方案：
+
+- Vue.set()
+
+  ```js showLineNumbers title="set源码"
+  function set (target: Array<any> | Object, key: any, val: any): any {
+  ...
+  defineReactive(ob.value, key, val)
+  ob.dep.notify()
+  return val
+  }
+  ```
+
+  这里无非再次调用 defineReactive 方法，实现新增属性的响应式
+
+  关于 defineReactive 方法，内部还是通过 Object.defineProperty 实现属性拦截
+
+  ```js showLineNumbers title="测试代码"
+  function defineReactive(obj, key, val) {
+    Object.defineProperty(obj, key, {
+      get() {
+        console.log(`get ${key}:${val}`)
+        return val
+      },
+      set(newVal) {
+        if (newVal !== val) {
+          console.log(`set ${key}:${newVal}`)
+          val = newVal
+        }
+      }
+    })
+  }
+  ```
+
+- Object.assign()
+
+- 直接使用 Object.assign()添加到对象的新属性不会触发更新
+
+- 应创建一个新的对象，合并原对象和混入对象的属性
+
+```js showLineNumbers title="测试代码"
+this.someObject = Object.assign({},this.someObject,{newProperty1:1,newProperty2:2 ...})
+```
+
+- $forcecUpdated()
+
+如果你发现你自己需要在 Vue 中做一次强制更新，99.9% 的情况，是你在某个地方做错了事
+
+$forceUpdate 迫使 Vue 实例重新渲染
+
+PS：仅仅影响实例本身和插入插槽内容的子组件，而不是所有子组件。
+
+小结
+
+如果为对象添加少量的新属性，可以直接采用 Vue.set()
+
+如果需要为新对象添加大量的新属性，则通过 Object.assign()创建新对象
+
+如果你实在不知道怎么操作时，可采取$forceUpdate()进行强制刷新 (不建议)
+
+## 14.Vue 中的 ref、toRef 和 toRefs 有什么区别？
+
+1. ref
+
+- 定义：ref 用于创建一个响应式的引用对象。它可以是基本类型或对象类型。
+- 用法：当你需要将一个值（如字符串、数字、对象等）转换为响应式数据时使用。
+- 返回值：返回一个包含 .value 属性的对象，通过该属性访问和修改其值。
+
+```js showLineNumbers title="测试代码"
+import { ref } from 'vue'
+
+const count = ref(0) // 创建响应式的引用
+count.value++ // 修改值
+```
+
+2. toRef
+
+- 定义：toRef 用于将响应式对象中的某个属性转换为一个响应式引用。它适用于在 setup 函数中解构响应式对象时，保持响应性。
+- 用法：当你需要从一个响应式对象中提取一个属性，并希望这个属性依然是响应式的时使用。
+- 返回值：返回一个响应式引用对象。
+
+```js showLineNumbers title="测试代码"
+import { ref, reactive, toRef } from 'vue'
+
+const state = reactive({ count: 0 })
+const countRef = toRef(state, 'count') // 转换为响应式引用
+countRef.value++ // 修改值
+```
+
+3. toRefs
+
+- 定义：toRefs 用于将一个响应式对象的所有属性转换为响应式引用，返回一个新对象。
+- 用法：适用于将整个响应式对象解构为单独的响应式引用，保持各属性的响应性。
+- 返回值：返回一个新对象，其中每个属性都是响应式引用。
+
+```js showLineNumbers title="测试代码"
+import { reactive, toRefs } from 'vue'
+
+const state = reactive({ count: 0, name: 'Vue' })
+const { count, name } = toRefs(state) // 解构为响应式引用
+count.value++ // 修改 count
+```
+
+## 15.在 Vue 中的路由守卫是什么，可以在什么场景下使用
+
+路由守卫的分类
+
+Vue 中的路由守卫分为三类：
+
+全局守卫：作用于整个应用的路由系统，影响所有路由的导航。
+
+- beforeEach：在每个路由跳转前触发。
+- beforeResolve：在所有组件内守卫和异步路由组件被解析后触发。
+- afterEach：路由跳转结束后触发。
+
+路由独享守卫：作用于单个路由定义。
+
+- beforeEnter：当进入某个特定路由前触发，仅作用于配置此守卫的路由。
+
+组件内守卫：在路由组件内使用，针对组件级别的导航控制。
+
+- beforeRouteEnter：在路由进入该组件之前触发，可以访问组件实例。
+- beforeRouteUpdate：当复用的组件接收到新的参数或路由时触发。
+- beforeRouteLeave：在离开当前路由组件时触发，可以阻止导航。
+
+常见使用场景
+
+1. 身份验证与权限控制
+
+- 在用户进入某个页面前验证其身份，确保只有登录用户才能访问某些页面。如果未登录，可以在路由守卫中重定向到登录页面。
+
+```js showLineNumbers title="测试代码"
+router.beforeEach((to, from, next) => {
+  if (to.meta.requiresAuth && !isLoggedIn()) {
+    next('/login') // 未登录则重定向到登录页面
+  } else {
+    next() // 继续导航
+  }
+})
+```
+
+2. 数据加载与异步请求
+
+- 在路由跳转时，预先获取页面所需的数据，在数据加载完成后再进行路由跳转。这样可以确保进入页面时所需的数据已经准备好。
+
+```js showLineNumbers title="测试代码"
+router.beforeEach((to, from, next) => {
+  fetchDataForRoute(to).then(data => {
+    to.params.data = data
+    next()
+  })
+})
+```
+
+3. 阻止路由跳转
+
+- 在某些情况下，需要阻止用户离开页面，比如表单内容未保存时提醒用户确认，避免数据丢失。
+
+```js showLineNumbers title="测试代码"
+beforeRouteLeave(to, from, next) {
+  if (this.formHasUnsavedChanges) {
+    const answer = window.confirm('您有未保存的更改，是否确认离开？');
+    if (!answer) next(false); // 阻止跳转
+    else next();
+  } else {
+    next();
+  }
+}
+```
+
+4. 动态修改页面标题或元信息
+
+- 可以通过守卫在每次路由跳转时动态更改页面标题或 SEO 相关的 meta 信息。
+
+```js showLineNumbers title="测试代码"
+router.beforeEach((to, from, next) => {
+  document.title = to.meta.title || '默认标题'
+  next()
+})
+```
+
+5. 访问日志
+
+- 在全局守卫中记录用户的路由访问历史或进行埋点统计，帮助分析用户行为。
+
+```js showLineNumbers title="测试代码"
+router.afterEach((to, from) => {
+  console.log(`Navigated from ${from.path} to ${to.path}`)
+})
+```
+
+## 16.vue 中 Scoped Styles 是如何实现样式隔离的？说说具体的原理
+
+原理
+
+1. 生成唯一的类名： Vue 会通过编译器自动为组件的每个元素生成一个唯一的类名。这个类名通常会在组件的 `<style scoped>` 标签中定义的 CSS 规则上附加一个特定的作用域标识符（hash 值）。这些唯一的类名确保样式只作用于当前组件，而不会与其他组件的样式发生冲突。
+
+2. CSS 样式的自动作用域绑定： 在编译过程中，Vue 会遍历 `<style scoped>` 标签中的所有 CSS 选择器，并通过增加一个动态生成的属性（如 data-v-xxxxxx）来确保这些样式只应用于当前组件。这个属性会被自动加到所有 HTML 元素的 class 属性上，从而达到样式隔离的目的。
+
+3. 如何生成唯一的作用域标识符： Vue 会在编译时根据当前组件的 ID 或文件名生成一个唯一的哈希值（例如 data-v-123abc），这个哈希值会被附加到样式选择器和元素的 class 属性中。
+
+```js showLineNumbers title="编译后"
+<div class="button" data-v-123abc>
+  Click me
+</div>
+```
+
+样式穿透
+
+如果需要修改子组件的样式，可以使用深度选择器 >>> 或 /deep/，来让某些样式穿透到子组件中。比如：
+
+```css showLineNumbers title="测试代码"
+/* 通过深度选择器覆盖子组件中的样式 */
+.my-component >>> .child {
+  color: red;
+}
+```
+
+优点
+
+1. 避免全局污染：Scoped 样式使得组件的样式与其他组件完全隔离，避免了全局样式污染问题。
+2. 增强可维护性：每个组件的样式都与组件逻辑紧密结合，便于维护和重构。
+3. 自动生成唯一类名：无需手动管理命名空间，Vue 会自动处理。
+4. 提高可读性：每个组件都有自己独立的样式，清晰可见，易于理解和调试。
+
+缺点
+
+1. 性能开销：生成唯一类名和样式时，会增加一些计算开销，尤其是当有大量组件时。
+2. 深度选择器限制：某些场景下需要穿透子组件的样式，可能会增加复杂度和维护成本。

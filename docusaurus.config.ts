@@ -2,6 +2,8 @@ import { themes as prismThemes } from 'prism-react-renderer';
 import type { Config } from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 import { navbarConfig } from './static/data/navbar';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 
 const config: Config = {
   title: '阿泽の个人博客',
@@ -12,7 +14,7 @@ const config: Config = {
   url: 'https://npqjz.github.io',
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
-  baseUrl: '/npqjz.github.io/',
+  baseUrl: '/',
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
@@ -38,7 +40,7 @@ const config: Config = {
       //   calendar: 'gregory',
       //   path: 'en',
       // },
-      fa: {
+      zh: {
         label: '中文',
         direction: 'ltr',
         htmlLang: 'zh-CN',
@@ -54,10 +56,15 @@ const config: Config = {
       {
         docs: {
           sidebarPath: './sidebars.ts',
+          // sidebarCollapsible: false,
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
             'https://github.com/npqjz/npqjz.github.io/tree/main/',
+          remarkPlugins: [remarkMath],
+          rehypePlugins: [rehypeKatex],
+          // showLastUpdateTime: true,
+
         },
         blog: {
           showReadingTime: true,
@@ -65,6 +72,10 @@ const config: Config = {
           // Remove this to remove the "edit this page" links.
           editUrl:
             'https://github.com/npqjz/npqjz.github.io/tree/main/',
+          // showLastUpdateTime: true,
+          blogTitle: '近期博客',
+          remarkPlugins: [remarkMath],
+          rehypePlugins: [rehypeKatex],
         },
         theme: {
           customCss: './src/css/custom.scss',
@@ -72,13 +83,37 @@ const config: Config = {
       } satisfies Preset.Options,
     ],
   ],
+  stylesheets: [
+    {
+      href: 'https://cdn.jsdelivr.net/npm/katex@0.13.24/dist/katex.min.css',
+      type: 'text/css',
+      integrity:
+        'sha384-odtC+0UGzzFL/6PNoE8rX/SPcQDXBJ+uRepguP4QkPCm2LBxH3FA3y+fKSiJ+AmM',
+      crossorigin: 'anonymous',
+    },
+  ],
 
-  plugins: ['docusaurus-plugin-sass', 'custom-docusaurus-plugin'],
+
+  plugins: ['docusaurus-plugin-sass', 'custom-docusaurus-plugin', 'plugin-image-zoom'],
 
   themeConfig: {
     // Replace with your project's social card
     image: 'img/meta-img.png',
     navbar: navbarConfig as any,
+    docs: {
+      sidebar: {
+        hideable: true,
+      },
+    },
+    tableOfContents: {
+      minHeadingLevel: 2,
+      maxHeadingLevel: 5,
+    },
+    algolia: {
+      apiKey: '65cb00ea86023159c589d01fa775b3ac',
+      appId: 'LOWWJ8AQCB',
+      indexName: 'npqjzio',
+    },
     footer: {
       logo: {
         src: 'img/meta-img.png',
@@ -90,19 +125,27 @@ const config: Config = {
           items: [
             {
               label: '数据结构',
-              to: '/docs/DS',
+              to: '/docs/category/数据结构',
             },
             {
               label: '操作系统',
-              to: '/docs/OS',
+              to: '/docs/category/操作系统',
             },
             {
               label: '计算机网络',
-              to: '/docs/CN',
+              to: '/docs/category/计算机网络',
             },
             {
               label: '计算机组成原理',
-              to: '/docs/COA',
+              to: `/docs/category/计算机组成原理`,
+            },
+            {
+              label: 'vue',
+              to: `/docs/category/vue`,
+            },
+            {
+              label: 'react',
+              to: `/docs/category/react`,
             }
           ],
         },
@@ -127,7 +170,7 @@ const config: Config = {
           title: 'More',
           items: [
             {
-              label: 'Blog',
+              label: '博客',
               to: '/blog',
             },
             {
@@ -137,27 +180,38 @@ const config: Config = {
           ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} My Project, Inc. Built with Docusaurus.`,
+      copyright: `Copyright © ${new Date().getFullYear()} NPqjz.`,
+    },
+    giscus: {
+      repo: 'npqjz/npqjz.github.io', // edit this
+      repoId: 'R_kgDOMfhO6Q', // edit this
+      category: 'General',
+      categoryId: 'DIC_kwDOMfhO6c4Chege', // edit this
     },
     prism: {
-      theme: prismThemes.github,
-      darkTheme: prismThemes.dracula,
-      additionalLanguages: ['powershell', 'cpp', 'c'],
+      theme: prismThemes.oneLight,
+      darkTheme: prismThemes.oneDark,
+      additionalLanguages: ['powershell', 'cpp', 'c', 'bash', 'go', 'java'],
+      magicComments: [
+        {
+          className: 'code-block-error-line',
+          line: 'error',
+        },
+        {
+          className: 'theme-code-block-highlighted-line',
+          line: 'highlight-next-line',
+          block: { start: 'highlight-start', end: 'highlight-end' },
+        },
+      ]
     },
   } satisfies Preset.ThemeConfig,
 
-  scripts: [
-    // {
-    //   src: "@site/static/anim/screen_effect.js",
-    //   async: true
-    // },
-    // {
-    //   src: "@site/static/anim//pointer_effect.js",
-    //   async: true
-    // }
-  ],
+  scripts: [],
 
-  themes: ['@docusaurus/theme-live-codeblock'],
+  themes: ['@docusaurus/theme-live-codeblock', '@docusaurus/theme-mermaid'],
+  markdown: {
+    mermaid: true,
+  },
 };
 
 export default config;

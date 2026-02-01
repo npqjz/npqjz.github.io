@@ -1,0 +1,689 @@
+# 题目 17 - 题目 24
+
+## 17.React 是怎么渲染出页面的？
+
+1. 创建虚拟 DOM
+
+- 组件定义：当你定义一个组件并调用 render 方法时，React 会根据组件的 JSX 结构创建一个虚拟 DOM。这是一个轻量级的 JavaScript 对象，描述了 UI 的结构。
+
+2. 渲染到真实 DOM
+
+- 初始渲染：在组件首次渲染时，React 会将虚拟 DOM 转换为实际的 DOM 元素，并将其插入到页面中。通常是通过 ReactDOM.render() 方法完成的。
+
+3. 组件更新
+
+- 状态或属性变化：当组件的状态（state）或属性（props）发生变化时，React 会重新调用组件的 render 方法，生成新的虚拟 DOM。
+
+4. Diff 算法
+
+- 比较新旧虚拟 DOM：React 使用高效的 Diff 算法对比新旧虚拟 DOM，以找到需要更新的部分。这个过程称为“调和”（reconciliation）。
+
+5. 更新真实 DOM
+
+- 最小化 DOM 操作：根据 Diff 算法的结果，React 会计算出最小的 DOM 更新操作，只对那些发生变化的部分进行实际更新，而不是重新渲染整个页面。
+
+6. 生命周期方法
+
+- 调用生命周期方法：在渲染过程中，React 会调用组件的生命周期方法，例如 componentDidMount、componentDidUpdate 等，以允许开发者在不同的渲染阶段执行特定的逻辑。
+
+7. 批处理更新
+
+- 批量更新：在事件处理时，React 会将多个状态更新合并为一次渲染，减少不必要的 DOM 操作，提高性能。
+
+8. 异步渲染
+
+- 并发渲染：从 React 16 开始，React 支持异步渲染，可以在不阻塞主线程的情况下进行 UI 更新，以提升用户体验。
+
+## 18.React 中，如何实现类似于 Vue-router 提供的路由守卫？
+
+方法一：使用 useEffect 钩子在组件层面实现
+
+对于需要进行路由守卫的组件，可以在组件的 useEffect 中添加相应的导航逻辑。这种方式类似于 Vue 的 beforeRouteEnter 守卫。
+
+```js showLineNumbers title="测试代码"
+import { useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+
+function ProtectedComponent() {
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    const isAuthenticated = checkAuthentication() // 自定义的身份验证逻辑
+    if (!isAuthenticated) {
+      navigate('/login') // 如果未登录，重定向到登录页面
+    }
+  }, [navigate])
+
+  return <div>Protected Content</div>
+}
+```
+
+方法二：使用高阶组件 (Higher-Order Component)
+
+通过高阶组件（HOC），可以将路由守卫的逻辑封装在组件外部，从而实现类似全局路由守卫的功能。
+
+```js showLineNumbers title="测试代码"
+import { useNavigate } from 'react-router-dom'
+import React, { useEffect } from 'react'
+
+const withAuthGuard = WrappedComponent => {
+  return props => {
+    const navigate = useNavigate()
+
+    useEffect(() => {
+      const isAuthenticated = checkAuthentication() // 自定义的验证逻辑
+      if (!isAuthenticated) {
+        navigate('/login') // 如果未通过验证，重定向
+      }
+    }, [navigate])
+
+    return <WrappedComponent {...props} />
+  }
+}
+
+const ProtectedComponent = () => {
+  return <div>Protected Content</div>
+}
+
+export default withAuthGuard(ProtectedComponent)
+```
+
+方法三：通过 React Router Outlet 和中间件模式
+
+React Router 提供了 `<Outlet />` 组件，它可以允许我们将路由守卫逻辑应用到某些路由集合上。可以通过中间件模式对路由进行守卫。
+
+```js showLineNumbers title="测试代码"
+import { Navigate, Outlet } from 'react-router-dom'
+
+const ProtectedRoute = ({ isAuthenticated }) => {
+  return isAuthenticated ? <Outlet /> : <Navigate to="/login" />
+}
+
+// 使用：
+;<Route path="/protected" element={<ProtectedRoute isAuthenticated={authStatus} />}>
+  <Route path="dashboard" element={<Dashboard />} />
+  <Route path="settings" element={<Settings />} />
+</Route>
+```
+
+在上面的例子中，如果用户未通过身份验证，ProtectedRoute 将重定向到 /login，否则允许继续加载子路由。
+
+方法四：在路由配置中实现路由守卫逻辑
+
+可以通过在路由配置中直接实现身份验证或其他守卫逻辑。
+
+```js showLineNumbers title="测试代码"
+import { Route, Routes, Navigate } from 'react-router-dom'
+
+function PrivateRoute({ element: Component, isAuthenticated, ...rest }) {
+  return <Route {...rest} element={isAuthenticated ? <Component /> : <Navigate to="/login" />} />
+}
+
+function App() {
+  const isAuthenticated = checkAuthentication() // 自定义验证逻辑
+
+  return (
+    <Routes>
+      <Route path="/login" element={<Login />} />
+      <PrivateRoute path="/dashboard" element={<Dashboard />} isAuthenticated={isAuthenticated} />
+    </Routes>
+  )
+}
+```
+
+方法五：使用 Redux 或 Context 实现全局守卫
+
+结合 useContext 或 Redux，可以将身份验证状态存储在全局状态中，然后在每个需要守卫的组件或路由上进行判断。
+
+1. 通过 Context 实现：
+
+```js showLineNumbers title="测试代码"
+import { useContext, useEffect } from 'react'
+import { AuthContext } from './AuthProvider'
+import { useNavigate } from 'react-router-dom'
+
+function ProtectedComponent() {
+  const { isAuthenticated } = useContext(AuthContext)
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/login') // 重定向到登录页面
+    }
+  }, [isAuthenticated, navigate])
+
+  return <div>Protected Content</div>
+}
+```
+
+2. 通过 Redux 实现：
+
+```js showLineNumbers title="测试代码"
+import { useSelector } from 'react-redux'
+import { useNavigate } from 'react-router-dom'
+
+function ProtectedComponent() {
+  const isAuthenticated = useSelector(state => state.auth.isAuthenticated)
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/login')
+    }
+  }, [isAuthenticated, navigate])
+
+  return <div>Protected Content</div>
+}
+```
+
+## 19.为什么 react 组件中， 都需要声明 `import React from 'react';`
+
+1. JSX 需要 React
+
+在 React 的早期版本中，JSX（JavaScript XML）是通过 JavaScript 语法扩展来实现的。JSX 代码本质上是一个类似 XML 的语法糖，它会被 Babel 转换为 React.createElement() 调用。
+
+```js showLineNumbers title="测试代码"
+const element = <h1>Hello, world!</h1>
+```
+
+```js showLineNumbers title="Babel 转换后的代码"
+const element = React.createElement('h1', null, 'Hello, world!')
+```
+
+2. React 需要作为一个全局对象
+
+React.createElement() 是创建 React 元素的基础函数。为了能够正确生成虚拟 DOM 和管理组件，React 库提供了必要的 API。因此，导入 React 是为了能够调用这些方法。
+
+3. Babel 的转换（之前的工作原理）
+
+在 JSX 编译阶段，Babel 会将 JSX 转换为 React.createElement() 函数调用。因此，React 在 JSX 文件中成为了必需的导入项。如果没有导入 React，Babel 在转换过程中将无法找到 React.createElement，从而导致错误。
+
+随着 React 17 的更新：
+
+- 自 React 17 版本开始，JSX 转换的工作有所变化。React 17 引入了新的 JSX 转换方式，允许开发者不再显式地导入 React。这是通过新的 JSX 编译器来实现的，不再需要将 JSX 转换为 React.createElement 调用。
+
+- 在 React 17 及以后的版本中，Babel 会自动处理 React 的引入，具体来说：
+
+  - 不再需要显式地导入 React：如果你使用了 React 17 或更高版本，并且配置了正确的 Babel 插件（如 @babel/preset-react），JSX 的编译器会自动将 React 导入到每个文件中，从而不再需要手动编写 import React from 'react';。
+
+## 20.在 React 项目中， 是否可以不用 react-router， 使用浏览器原生 history 路由来组织页面路由？
+
+在 React 项目中，可以不用 react-router，直接使用浏览器原生的 history API 来组织页面路由。实际上，react-router 本质上也是基于浏览器的 history API 实现的路由功能，它提供了一个封装好的、更易于使用的路由管理工具。
+
+使用浏览器原生 history API 进行路由管理
+
+React 提供了 history API 作为浏览器的原生路由系统，包含了 window.history 相关方法（如 pushState, replaceState, popState 等）。你可以通过这些 API 手动实现路由的控制，并结合 React 状态管理来更新页面视图。
+
+以下是使用原生 history API 管理路由的基本步骤：
+
+1. 创建路由管理逻辑
+
+使用原生 history API，你需要自己处理 URL 的变化、浏览器历史栈的管理以及与 React 组件的匹配。
+
+```js showLineNumbers title="测试代码"
+import React, { useState, useEffect } from 'react'
+
+// 简单的路由管理器
+function useHistory() {
+  const [location, setLocation] = useState(window.location.pathname)
+
+  useEffect(() => {
+    // 监听浏览器的历史变化
+    const handlePopState = () => {
+      setLocation(window.location.pathname)
+    }
+
+    window.addEventListener('popstate', handlePopState)
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState)
+    }
+  }, [])
+
+  const push = path => {
+    window.history.pushState(null, '', path)
+    setLocation(path) // 更新当前路径
+  }
+
+  const replace = path => {
+    window.history.replaceState(null, '', path)
+    setLocation(path) // 更新当前路径
+  }
+
+  return { location, push, replace }
+}
+
+const Route = ({ path, component }) => {
+  return window.location.pathname === path ? component : null
+}
+
+// 主应用组件
+function App() {
+  const { location, push } = useHistory()
+
+  return (
+    <div>
+      <nav>
+        <button onClick={() => push('/')}>Home</button>
+        <button onClick={() => push('/about')}>About</button>
+      </nav>
+
+      <div>
+        <Route path="/" component={<div>Home Page</div>} />
+        <Route path="/about" component={<div>About Page</div>} />
+      </div>
+    </div>
+  )
+}
+
+export default App
+```
+
+2. 解释代码
+
+- useHistory 是自定义 Hook，用来管理路由的变化和浏览器的历史记录。
+- window.history.pushState 用来修改浏览器的 URL，而不刷新页面。它会向历史记录栈中添加一个新的记录。
+- window.history.replaceState 用来替换当前的 URL，而不新增历史记录。
+- 通过监听 popstate 事件来处理浏览器后退、前进操作，确保页面和历史状态同步。
+- Route 组件根据当前的 window.location.pathname 来判断是否匹配当前路由并渲染对应的内容。
+
+## 21.React 为什么要自己实现调度器， 而不是直接使用 requestIdleCallback ？
+
+1. 对任务优先级的精确控制
+
+React 需要根据不同类型的任务（例如更新视图、处理事件、执行动画等）来控制任务的优先级，而 requestIdleCallback 并不提供足够细粒度的优先级控制。
+
+- React 的调度器（比如 React Fiber 调度器）允许它精确地控制任务的优先级，支持 高优先级任务（例如用户输入）和 低优先级任务（例如空闲时的渲染更新）。
+- requestIdleCallback 只提供了一个简单的空闲时间回调，它并没有内建对任务优先级的控制能力。所有的任务都会在浏览器空闲时执行，这样可能会导致一些高优先级任务被低优先级任务阻塞，无法及时处理。
+
+2. 任务的中断与抢占
+
+React 需要在渲染过程中支持任务的中断和抢占，以保证用户交互的流畅性和响应性。React 调度器实现了 时间切片 和 任务中断，可以在渲染过程中暂停低优先级的任务，去执行高优先级的任务（比如响应用户输入）。
+
+- requestIdleCallback 是在浏览器空闲时才执行的，无法灵活地中断正在进行的任务并优先处理高优先级任务。因此，React 需要更细粒度的调度来中断低优先级的渲染任务，确保用户交互的即时反馈。
+
+3. 跨浏览器兼容性
+
+requestIdleCallback 是一个相对较新的浏览器 API，并不是所有浏览器都支持它，特别是在旧版浏览器中。为了确保 React 在更多浏览器上都能正常工作，React 选择使用自定义的调度机制来处理任务，而不依赖于 requestIdleCallback。
+
+- React 的调度器（例如 Fiber 调度器）能在所有浏览器中正常工作，而不依赖于特定的浏览器 API。
+
+4. 能耗管理
+
+React 自己实现的调度器可以对空闲时间和浏览器的任务执行进行优化，最大限度地减少电池消耗和资源浪费。通过精确控制何时以及如何执行任务，React 可以避免不必要的计算，尤其是在移动设备上。
+
+- requestIdleCallback 调度任务的时机完全取决于浏览器空闲的状态，这可能导致在设备负载较高时浏览器频繁执行不必要的回调，消耗更多电量和计算资源。
+
+5. 更强的可定制性
+
+React 需要支持许多不同类型的任务，例如事件处理、动画、数据加载和视图更新。React 自己的调度器能够更灵活地处理这些任务的优先级和执行时机。而 requestIdleCallback 仅提供一个回调，无法处理那么多类型的任务。
+
+## 22.React 19 有哪些新特性？
+
+Action
+
+React 应用的一个常见场景是执行数据突变，然后更新状态作为响应。举个栗子，当用户提交表单更改姓名时，我们会发出 API 请求，然后处理响应。
+
+回首往昔，我们需要手动处理待定状态、错误、乐观更新和顺序请求。
+
+举个栗子，我们会这样处理 useState 中的待定状态和错误状态：
+
+```js showLineNumbers title="测试代码"
+// Action 之前的写法
+function UpdateName({}) {
+  const [name, setName] = useState('')
+  const [error, setError] = useState(null)
+  const [isPending, setIsPending] = useState(false)
+  const handleSubmit = async () => {
+    setIsPending(true)
+    const error = await updateName(name)
+    setIsPending(false)
+
+    if (error) {
+      setError(error)
+      return
+    }
+    redirect('/path')
+  }
+
+  return (
+    <div>
+      <input value={name} onChange={event => setName(event.target.value)} />
+      <button onClick={handleSubmit} disabled={isPending}>
+        Update
+      </button>
+      {error && <p>{error}</p>}
+    </div>
+  )
+}
+```
+
+```js showLineNumbers title="使用 useTransition() 的写法"
+// 使用 action 中的待定状态
+function UpdateName({}) {
+  const [name, setName] = useState('')
+  const [error, setError] = useState(null)
+  const [isPending, startTransition] = useTransition()
+  const handleSubmit = async () => {
+    startTransition(async () => {
+      const error = await updateName(name)
+
+      if (error) {
+        setError(error)
+        return
+      }
+      redirect('/path')
+    })
+  }
+
+  return (
+    <div>
+      <input value={name} onChange={event => setName(event.target.value)} />
+      <button onClick={handleSubmit} disabled={isPending}>
+        Update
+      </button>
+      {error && <p>{error}</p>}
+    </div>
+  )
+}
+```
+
+Action 会自动为我们管理提交数据：
+
+- 待定状态：Action 提供待定状态，该状态在请求开始时启动，且在提交最终状态更新时自动重置。
+- 乐观更新：Action 支持全新的 useOptimistic hook，因此我们可以在提交请求时，向用户表演即时反馈。
+- 错误处理：Action 提供错误处理，这样我们可以在请求失败时显示错误边界，且自动将乐观更新恢复为其原始值。
+- 表单：`<form>` 元素现在支持将函数传递给 action 和 formAction 属性。将函数传递给 action 属性默认使用 Action，并在提交后自动重置表单。
+
+```js showLineNumbers title="useActionState() 的使用"
+// 使用 <form> Action 和 useActionState
+function ChangeName({ name, setName }) {
+  const [error, submitAction, isPending] = useActionState(async (previousState, formData) => {
+    const error = await updateName(formData.get('name'))
+    if (error) {
+      return error
+    }
+    redirect('/path')
+  })
+
+  return (
+    <form action={submitAction}>
+      <input type="text" name="name" />
+      <button type="submit" disabled={isPending}>
+        Update
+      </button>
+      {error && <p>{error}</p>}
+    </form>
+  )
+}
+```
+
+新型 hook：useActionState
+
+为了使 Action 更容易处理常见情况，我们添加了一个全新的 useActionState hook：
+
+```js showLineNumbers title="测试代码"
+const [error, submitAction, isPending] = useActionState(async (previousState, newName) => {
+  const error = await updateName(newName)
+  if (error) {
+    // 我们可以返回该 Action 的任何结果。
+    // 比如，这里我们只返回了 error。
+    return error
+  }
+  // 处理成功的逻辑
+})
+```
+
+React DOM：新型 hook：useFormStatus
+
+在设计系统中，通常会编写需要访问其所在` <form>` 信息的设计组件，而无需将 props 向下透传到组件。
+
+这可以通过 Context 实现，但为了使常见情况更容易，我们添加了一个全新的 useFormStatus Hook：
+
+```js showLineNumbers title="测试代码"
+import { useFormStatus } from 'react-dom'
+
+function DesignButton() {
+  const { pending } = useFormStatus()
+  return <button type="submit" disabled={pending} />
+}
+```
+
+新型 hook：useOptimistic
+
+执行数据突变时的另一种常见 UI 模式是，在异步请求进行时乐观地展示最终状态。
+
+在 React 19 中，我们添加了一个全新的 useOptimistic hook，从而简化此操作：
+
+```js showLineNumbers title="测试代码"
+function ChangeName({ currentName, onUpdateName }) {
+  const [optimisticName, setOptimisticName] = useOptimistic(currentName)
+
+  const submitAction = async formData => {
+    const newName = formData.get('name')
+    setOptimisticName(newName)
+    const updatedName = await updateName(newName)
+    onUpdateName(updatedName)
+  }
+
+  return (
+    <form action={submitAction}>
+      <p>Your name is: {optimisticName}</p>
+      <p>
+        <label>Change Name:</label>
+        <input type="text" name="name" disabled={currentName !== optimisticName} />
+      </p>
+    </form>
+  )
+}
+```
+
+当 updateName 请求正在进行时，useOptimistic hook 会立即渲染 optimisticName。当更新完成或出错时，React 会自动切换回 currentName 的值。
+
+新型 API：use
+
+在 React 19 中，我们引入了一个全新的 use API 来读取渲染中的资源。
+
+```js showLineNumbers title="测试代码"
+import { use } from 'react'
+
+function Comments({ commentsPromise }) {
+  // use 会暂停直到 promise 解决。
+  const comments = use(commentsPromise)
+  return comments.map(comment => <p key={comment.id}>{comment}</p>)
+}
+
+function Page({ commentsPromise }) {
+  // 当 use 在 Comments 组件中暂停时，
+  // 这个 Suspense 会展示出来。
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <Comments commentsPromise={commentsPromise} />
+    </Suspense>
+  )
+}
+```
+
+粉丝请注意，use 不支持渲染中创建的 promise 对象。
+
+我们还可以使用 use 读取 Context，这允许我们条件读取 Context，比如在提前返回后：
+
+```js showLineNumbers title="测试代码"
+import { use } from 'react'
+import ThemeContext from './ThemeContext'
+
+function Heading({ children }) {
+  if (children == null) {
+    return null
+  }
+  // 由于提前返回，
+  // 这里使用 useContext 无法奏效。
+  const theme = use(ThemeContext)
+  return <h1 style={{ color: theme.color }}>{children}</h1>
+}
+```
+
+## 23.React 中，如何避免使用 context 时， 引起整个挂载节点树的重新渲染
+
+1. 将 Context 分离到更小的粒度
+
+将 context 拆分成多个独立的 context，每个 context 只管理独立的数据，而不是将所有状态集中在一个 context 中。
+
+示例：
+
+```js showLineNumbers title="测试代码"
+const UserContext = React.createContext()
+const ThemeContext = React.createContext()
+
+// 分离用户数据和主题数据到不同的 context
+function App() {
+  return (
+    <UserContext.Provider value={{ name: 'John' }}>
+      <ThemeContext.Provider value="dark">
+        <SomeComponent />
+      </ThemeContext.Provider>
+    </UserContext.Provider>
+  )
+}
+```
+
+2. 使用 React.memo 优化子组件
+
+如果某些组件只需要 context 的一部分值，但渲染逻辑中不直接依赖它们，可以通过 React.memo 阻止不必要的渲染。
+
+```js showLineNumbers title="测试代码"
+const UserContext = React.createContext()
+
+function UserName() {
+  const { name } = React.useContext(UserContext)
+  console.log('UserName renders') // 检查是否重新渲染
+  return <div>User: {name}</div>
+}
+
+const MemoizedUserName = React.memo(UserName)
+
+function App() {
+  const [user, setUser] = React.useState({ name: 'John' })
+
+  return (
+    <UserContext.Provider value={user}>
+      <MemoizedUserName />
+      <button onClick={() => setUser({ name: 'Doe' })}>Change Name</button>
+    </UserContext.Provider>
+  )
+}
+```
+
+3. 使用 context 的选择器
+
+借助外部库（如 react-context-selector）实现细粒度选择器，只订阅 context 的部分值，而不是整个 context 对象。
+
+```js showLineNumbers title="测试代码"
+import { createContext, useContextSelector } from 'use-context-selector'
+
+const UserContext = createContext()
+
+function UserName() {
+  const name = useContextSelector(UserContext, user => user.name)
+  console.log('UserName renders') // 检查是否重新渲染
+  return <div>User: {name}</div>
+}
+
+function App() {
+  const [user, setUser] = React.useState({ name: 'John', age: 30 })
+
+  return (
+    <UserContext.Provider value={user}>
+      <UserName />
+      <button onClick={() => setUser({ name: 'Doe', age: 30 })}>Change Name</button>
+    </UserContext.Provider>
+  )
+}
+```
+
+4. 使用嵌套 Provider
+
+对于大型项目，可以将 context 的范围限制到尽可能小的组件子树。
+
+```js showLineNumbers title="测试代码"
+const UserContext = React.createContext()
+
+function UserName() {
+  const { name } = React.useContext(UserContext)
+  return <div>User: {name}</div>
+}
+
+function App() {
+  const [user, setUser] = React.useState({ name: 'John' })
+
+  return (
+    <>
+      <UserContext.Provider value={user}>
+        <UserName />
+      </UserContext.Provider>
+      {/* 其他子树不受 UserContext 的影响 */}
+    </>
+  )
+}
+```
+
+5. 通过子组件的 props 传递 context 的值
+
+当 context 只需要被特定子组件使用时，可以直接将其值作为 props 传递，而不是通过 useContext。
+
+```js showLineNumbers title="测试代码"
+function UserName({ name }) {
+  console.log('UserName renders') // 检查是否重新渲染
+  return <div>User: {name}</div>
+}
+
+function App() {
+  const [user, setUser] = React.useState({ name: 'John' })
+
+  return (
+    <>
+      <UserName name={user.name} />
+      <button onClick={() => setUser({ name: 'Doe' })}>Change Name</button>
+    </>
+  )
+}
+```
+
+## 24.下面代码中，点击 “+3” 按钮后，age 的值是什么？
+
+```js showLineNumbers title="测试代码"
+import { useState } from 'react'
+
+export default function Counter() {
+  const [age, setAge] = useState(42)
+  function increment() {
+    setAge(age + 1)
+  }
+  return (
+    <>
+      <h1>Your age: {age}</h1>
+      <button
+        onClick={() => {
+          increment()
+          increment()
+          increment()
+        }}
+      >
+        +3
+      </button>
+    </>
+  )
+}
+```
+
+点击 +3 时，可能只更新为 43。
+
+这是因为 setAge(age + 1) 即使多次调用，也不会立即更新组件状态，而是会进行合并，最终只触发一次重新渲染。
+
+如果要实现调用三次就增加 3 ，可以将 increment 改为函数式更新：
+
+```js showLineNumbers title="测试代码"
+function increment() {
+  setAge(a => a + 1) // 函数式更新
+}
+```

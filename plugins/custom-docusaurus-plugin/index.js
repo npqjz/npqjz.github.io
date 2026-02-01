@@ -3,7 +3,6 @@ export default function (context, options) {
       name: 'custom-docusaurus-plugin',
       configureWebpack(config, isServer, utils) {
          const { getJSLoader } = utils;
-         console.log(config.name);
 
          return {
             module: {
@@ -26,6 +25,13 @@ export default function (context, options) {
                      href: 'https://www.github.com',
                   },
                },
+               {
+                  tagName: 'meta',
+                  attributes: {
+                     "http-equiv": 'Content-Security-Policy',
+                     content: 'upgrade-insecure-requests',
+                  },
+               }
                // ...content.remoteHeadTags,
             ],
             preBodyTags: [

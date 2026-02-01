@@ -1,0 +1,75 @@
+# 题目 21 - 题目 25
+
+## 21.img 的 srcset 属性的作用？
+
+```html showLineNumbers title="测试代码"
+<img src="image-128.png" srcset="image-256.png 2x" />
+```
+
+```html showLineNumbers title="测试代码"
+<img src="image-128.png" srcset="image-128.png 128w, image-256.png 256w, image-512.png 512w" sizes="(max-width: 360px) 340px, 128px" />
+```
+
+其中 srcset 指定图片的地址和对应的图片质量。sizes 用来设置图片的尺寸零界点。对于 srcset 中的 w 单位，可以理解成图片质量。如果可视区域小于这个质量的值，就可以使用。浏览器会自动选择一个最小的可用图片。
+
+```js showLineNumbers title="测试代码"
+sizes = '[media query] [length], [media query] [length] ... '
+```
+
+## 22.js 和 css 是否阻塞 DOM 树构建和渲染？
+
+- CSS 不会阻塞 DOM 的解析，但是会影响 JAVAScript 的运行，javascript 会阻止 DOM 树的解析，最终 css（CSSOM）会影响 DOM 树的渲染，也可以说最终会影响渲染树的生成。
+- 浏览器会下下载 HTML 解析页面生成 DOM 树，遇到 CSS 标签就开始解析 CSS，这个过程不会阻塞，但是如果遇到了 JS 脚本，此时假如 CSSOM 还没有构建完，需要等待 CSSOM 构建完，再去执行 JS 脚本，然后再执行 DOM 解析，此时会阻塞。
+
+## 23.使用 input 标签上传图片时，怎样触发默认拍照功能，同时选择多个文件，禁止展示输入的历史记录？
+
+```html showLineNumbers title="测试代码"
+<input type="file" accept="image/*;" capture="camera" />
+```
+
+capture 属性用于指定文件上传控件中媒体拍摄的方式。
+
+- user 前置
+- environment 后置
+- camera 相机
+- camcorder 摄像机
+- microphone 录音
+
+```html showLineNumbers title="测试代码"
+<input type="file" name="files" multiple />
+```
+
+```html showLineNumbers title="测试代码"
+<input type="text" autocomplete="off" />
+```
+
+## 24.页面统计数据中，常用的 PV、UV 指标分别是什么
+
+PV(页面访问量)
+
+- 即页面浏览量或点击量，用户每 1 次对网站中的每个网页访问均被记录 1 个 PV。
+
+- 用户对同一页面的多次访问，访问量累计，用以衡量网站用户访问的网页数量。
+
+UV(独立访客)
+
+- 是指通过互联网访问、浏览这个网页的自然人。访问您网站的一台电脑客户端为一个访客。
+
+- 00:00-24:00 内相同的客户端只被计算一次。
+
+## 25.什么是 DOM 和 BOM
+
+DOM（Document Object Model）和 BOM（Browser Object Model）是 JavaScript 中常用的两个概念，用于描述浏览器中的不同对象模型。
+
+1. DOM（Document Object Model）:
+
+- DOM 是表示 HTML 和 XML 文档的标准的对象模型。它将文档中的每个组件（如元素、属性、文本等）都看作是一个对象，开发者可以使用 JavaScript 来操作这些对象，从而动态地改变页面的内容、结构和样式。
+- DOM 以树状结构组织文档的内容，其中树的根节点是 document 对象，它代表整个文档。document 对象有各种方法和属性，可以用来访问和修改文档的内容和结构。
+
+2. BOM（Browser Object Model）:
+
+- BOM 是表示浏览器窗口及其各个组件的对象模型。它提供了一组对象，用于访问和控制浏览器窗口及其各个部分，如地址栏、历史记录等。
+- BOM 的核心对象是 window 对象，它表示浏览器窗口，并且是 JavaScript 中的全局对象。window 对象提供了许多属性和方法，用于控制浏览器窗口的各个方面，如页面导航、定时器、对话框等。
+- BOM 还提供了其他一些对象，如 navigator（提供浏览器相关信息）、location（提供当前文档的 URL 信息）、history（提供浏览器历史记录）、screen（提供屏幕信息）等。 <br />
+
+总的来说，DOM 是用于访问和操作网页文档的对象模型，而 BOM 是用于控制浏览器窗口及其各个组件的对象模型。在 JavaScript 编程中，开发者通常会同时使用 DOM 和 BOM 来完成各种任务，如操作网页元素、导航控制、事件处理等。

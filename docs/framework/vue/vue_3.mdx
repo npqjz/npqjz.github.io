@@ -1,0 +1,537 @@
+# 题目 17 - 题目 24
+
+## 17.Vue 有了数据响应式，为何还要 diff ？
+
+虚拟 DOM 和 Diff 算法
+
+虚拟 DOM 是一种内存中的表示结构，它是对真实 DOM 的抽象。Diff 算法是一种高效更新 DOM 的策略，它通过比较新旧虚拟 DOM 树的差异，最小化了更新操作，提高了页面的渲染效率。
+
+为什么还需要 Diff 算法？
+
+1. 性能优化：直接操作真实 DOM 是非常昂贵的，而虚拟 DOM 可以在内存中快速进行比较和计算差异。Diff 算法帮助减少了更新操作的次数和范围，从而提升了页面渲染的性能。
+
+2. 批量更新：Diff 算法能够将多次 DOM 更新操作合并为一次，避免了频繁的 DOM 操作，减少了浏览器的重排和重绘。
+
+3. 跨平台兼容：虚拟 DOM 和 Diff 算法使得 Vue 可以运行在不同的平台上，例如浏览器、Weex 等，统一了渲染逻辑和数据响应式的实现。
+
+4. 更新效率：即使是响应式系统可以自动更新视图，但是如果每次数据变化都直接操作真实 DOM，可能会带来性能问题。Diff 算法可以智能地比较新旧 DOM 树的变化，只更新必要的部分，从而提高了更新效率。
+
+## 18.谈谈 Vue 事件机制，并手写$on、$off、$emit、$once
+
+Vue 事件机制
+
+- $on(event, callback)：监听特定事件。
+- $off(event, callback)：停止监听特定事件。
+- $emit(event, ...args)：触发特定事件。
+- $once(event, callback)：只监听一次特定事件。
+
+手写实现
+
+```js showLineNumbers title="测试代码"
+class EventEmitter {
+  constructor() {
+    this.events = {}
+  }
+
+  // 监听事件
+  $on(event, callback) {
+    if (!this.events[event]) {
+      this.events[event] = []
+    }
+    this.events[event].push(callback)
+  }
+
+  // 停止监听事件
+  $off(event, callback) {
+    if (!this.events[event]) return
+
+    if (!callback) {
+      // 如果没有传递 callback，移除所有事件监听
+      this.events[event] = []
+    } else {
+      // 移除特定的事件监听
+      this.events[event] = this.events[event].filter(cb => cb !== callback)
+    }
+  }
+
+  // 触发事件
+  $emit(event, ...args) {
+    if (this.events[event]) {
+      this.events[event].forEach(callback => callback.apply(this, args))
+    }
+  }
+
+  // 只监听一次事件
+  $once(event, callback) {
+    const wrapper = (...args) => {
+      callback.apply(this, args)
+      this.$off(event, wrapper)
+    }
+    this.$on(event, wrapper)
+  }
+}
+
+// 示例
+const eventBus = new EventEmitter()
+
+// 监听事件
+eventBus.$on('test', msg => console.log('test event:', msg))
+
+// 触发事件
+eventBus.$emit('test', 'Hello, World!')
+
+// 监听一次事件
+eventBus.$once('once', msg => console.log('once event:', msg))
+
+// 触发一次性事件
+eventBus.$emit('once', 'This should appear once')
+eventBus.$emit('once', 'This should not appear')
+
+// 停止监听事件
+eventBus.$off('test')
+
+// 触发事件（已经移除监听）
+eventBus.$emit('test', 'This should not appear')
+```
+
+解释
+
+1. $on：将事件和回调函数添加到 events 对象中。
+2. $off：如果没有传递回调函数，则移除所有监听。如果传递了回调函数，则只移除特定的回调。
+3. $emit：触发事件，调用所有注册的回调函数并传递参数。
+4. $once：使用一个包装函数 (wrapper) 包装原始回调函数，确保回调只执行一次，然后移除事件监听。
+
+## 19.computed 计算值为什么还可以依赖另外一个 computed 计算值？
+
+依赖其他计算属性
+
+当一个 computed 计算属性依赖于另一个 computed 计算属性时，Vue 能够正确地追踪这些依赖关系。这是因为：
+
+1. 依赖收集： 当第一个计算属性被访问时，它的 getter 会被调用，并且 Vue 会记录下这个依赖关系。这个过程包括记录依赖的其他计算属性。
+
+2. 缓存机制： 如果另一个计算属性的值没有改变，Vue 不会重复计算它，而是直接使用缓存值。这保证了性能优化。
+
+3. 更新机制： 当基础的响应式属性发生变化时，所有依赖它的计算属性都会被重新计算，并且最终更新到组件的渲染中。
+
+## 20.说一下 vm.$set 原理
+
+vm.$set 是 Vue 中用于在对象上设置属性并确保新属性是响应式的方法。其实现原理可以简化为以下几个步骤：
+
+1. 处理数组情况： 如果目标是数组，并且键是有效的数组索引，使用 splice 方法添加新元素以保持响应性。
+
+2. 处理已有属性： 如果属性已经存在于对象中，直接赋值。
+
+3. 处理新属性： 如果目标对象不是响应式对象，直接赋值新属性。
+
+4. 添加响应式新属性： 如果目标对象是响应式的，通过 defineReactive 方法将新属性定义为响应式。这包括定义 getter 和 setter。
+
+5. 通知依赖更新： 调用 ob.dep.notify() 通知所有依赖于该对象的 watchers 执行更新。
+
+defineReactive 简要实现
+
+defineReactive 方法定义对象属性为响应式，主要步骤：
+
+依赖管理： 创建一个 Dep 实例管理依赖。
+递归观察： 使用 observe 递归地将属性值转化为响应式。
+定义 getter 和 setter： 使用 Object.defineProperty 定义属性的 getter 和 setter。在 getter 中收集依赖，在 setter 中通知依赖更新。
+
+defineReactive 简要实现
+
+defineReactive 方法定义对象属性为响应式，主要步骤：
+
+- 依赖管理： 创建一个 Dep 实例管理依赖。
+- 递归观察： 使用 observe 递归地将属性值转化为响应式。
+- 定义 getter 和 setter： 使用 Object.defineProperty 定义属性的 getter 和 setter。在 getter 中收集依赖，在 setter 中通知依赖更新。
+
+## 21.怎么在 Vue 中定义全局方法？
+
+方法一：在 Vue 2 中通过 Vue.prototype 定义全局方法
+
+```js showLineNumbers title="测试代码"
+// main.js
+import Vue from 'vue'
+import App from './App.vue'
+
+Vue.config.productionTip = false
+
+// 定义全局方法
+Vue.prototype.$myGlobalMethod = function () {
+  console.log('这是一个全局方法')
+}
+
+new Vue({
+  render: h => h(App)
+}).$mount('#app')
+```
+
+组件中使用
+
+```js showLineNumbers title="测试代码"
+<template>
+  <div>
+    <button @click="useGlobalMethod">调用全局方法</button>
+  </div>
+</template>
+
+<script>
+export default {
+  methods: {
+    useGlobalMethod() {
+      this.$myGlobalMethod();
+    }
+  }
+}
+</script>
+```
+
+方法二：在 Vue 3 中通过 app.config.globalProperties 定义全局方法
+
+```js showLineNumbers title="测试代码"
+// main.js
+import { createApp } from 'vue'
+import App from './App.vue'
+
+const app = createApp(App)
+
+// 定义全局方法
+app.config.globalProperties.$myGlobalMethod = function () {
+  console.log('这是一个全局方法')
+}
+
+app.mount('#app')
+```
+
+组件中使用
+
+```js showLineNumbers title="测试代码"
+<template>
+  <div>
+    <button @click="useGlobalMethod">调用全局方法</button>
+  </div>
+</template>
+
+<script>
+export default {
+  methods: {
+    useGlobalMethod() {
+      this.$myGlobalMethod()
+    }
+  }
+}
+</script>
+```
+
+方法三：使用混入（Mixin）
+
+你可以创建一个混入对象并将其全局注册，从而在所有组件中使用这个混入对象定义的方法。
+
+```js showLineNumbers title="测试代码"
+// globalMixin.js
+export const globalMixin = {
+  methods: {
+    $myGlobalMethod() {
+      console.log('这是一个全局方法')
+    }
+  }
+}
+```
+
+```js showLineNumbers title="测试代码"
+// main.js
+import Vue from 'vue'
+import App from './App.vue'
+import { globalMixin } from './globalMixin'
+
+Vue.config.productionTip = false
+
+// 全局混入
+Vue.mixin(globalMixin)
+
+new Vue({
+  render: h => h(App)
+}).$mount('#app')
+```
+
+在组件中使用
+
+```js showLineNumbers title="测试代码"
+<template>
+  <div>
+    <button @click="useGlobalMethod">调用全局方法</button>
+  </div>
+</template>
+
+<script>
+export default {
+  methods: {
+    useGlobalMethod() {
+      this.$myGlobalMethod();
+    }
+  }
+}
+</script>
+```
+
+方法四：创建插件
+
+你可以创建一个 Vue 插件来封装全局方法，并在 main.js 中安装插件。
+
+```js showLineNumbers title="测试代码"
+// myPlugin.js
+export default {
+  install(Vue) {
+    Vue.prototype.$myGlobalMethod = function () {
+      console.log('这是一个全局方法')
+    }
+  }
+}
+```
+
+```js showLineNumbers title="测试代码"
+// main.js
+import Vue from 'vue'
+import App from './App.vue'
+import myPlugin from './myPlugin'
+
+Vue.config.productionTip = false
+
+// 安装插件
+Vue.use(myPlugin)
+
+new Vue({
+  render: h => h(App)
+}).$mount('#app')
+```
+
+在组件中使用
+
+```js showLineNumbers title="测试代码"
+<template>
+  <div>
+    <button @click="useGlobalMethod">调用全局方法</button>
+  </div>
+</template>
+
+<script>
+export default {
+  methods: {
+    useGlobalMethod() {
+      this.$myGlobalMethod();
+    }
+  }
+}
+</script>
+```
+
+## 22.Vue 中父组件怎么监听到子组件？
+
+方法一：通过事件通信
+
+子组件在生命周期钩子中触发自定义事件，父组件监听这些事件。
+
+1. 子组件
+
+```js showLineNumbers title="测试代码"
+<template>
+  <div>子组件</div>
+</template>
+
+<script>
+export default {
+  name: 'ChildComponent',
+  mounted() {
+    this.$emit('childMounted');
+  }
+}
+</script>
+```
+
+2. 父组件
+
+```js showLineNumbers title="测试代码"
+<template>
+  <div>
+    <ChildComponent @childMounted="handleChildMounted" />
+  </div>
+</template>
+
+<script>
+import ChildComponent from './ChildComponent.vue';
+
+export default {
+  components: {
+    ChildComponent
+  },
+  methods: {
+    handleChildMounted() {
+      console.log('子组件已挂载');
+    }
+  }
+}
+</script>
+```
+
+方法二：使用 ref
+
+父组件通过 ref 直接访问子组件实例，并在父组件的生命周期钩子中调用子组件的方法。
+
+1. 子组件
+
+```js showLineNumbers title="测试代码"
+<template>
+  <div>子组件</div>
+</template>
+
+<script>
+export default {
+  name: 'ChildComponent',
+  mounted() {
+    console.log('子组件已挂载');
+  }
+}
+</script>
+```
+
+2. 父组件
+
+```js showLineNumbers title="测试代码"
+<template>
+  <div>
+    <ChildComponent ref="child" />
+  </div>
+</template>
+
+<script>
+import ChildComponent from './ChildComponent.vue';
+
+export default {
+  components: {
+    ChildComponent
+  },
+  mounted() {
+    this.$refs.child.$on('hook:mounted', this.handleChildMounted);
+  },
+  methods: {
+    handleChildMounted() {
+      console.log('通过 ref 获取子组件的挂载');
+    }
+  }
+}
+</script>
+```
+
+方法三：使用 provide 和 inject
+
+通过 provide 和 inject 实现跨层级组件通信。
+
+1. 子组件
+
+```js showLineNumbers title="测试代码"
+<template>
+  <div>子组件</div>
+</template>
+
+<script>
+export default {
+  name: 'ChildComponent',
+  inject: ['notifyParent'],
+  mounted() {
+    this.notifyParent('mounted');
+  }
+}
+</script>
+```
+
+2. 父组件
+
+```js showLineNumbers title="测试代码"
+<template>
+  <div>
+    <ChildComponent />
+  </div>
+</template>
+
+<script>
+import ChildComponent from './ChildComponent.vue';
+
+export default {
+  components: {
+    ChildComponent
+  },
+  provide() {
+    return {
+      notifyParent: this.handleNotification
+    }
+  },
+  methods: {
+    handleNotification(hook) {
+      if (hook === 'mounted') {
+        console.log('子组件已挂载');
+      }
+    }
+  }
+}
+</script>
+```
+
+## 23.vue 组件里写的原生 addEventListeners 监听事件，要手动去销毁吗？为什么？
+
+在 Vue 组件中，如果你使用 addEventListener 添加了原生的 DOM 事件监听器，通常需要在组件销毁时手动移除这些监听器。
+
+原因如下：
+
+1. 内存泄漏： 如果不手动移除事件监听器，监听器会继续存在于内存中，即使对应的 DOM 元素已经被移除。这会导致内存泄漏，因为监听器持有对 DOM 元素的引用，导致垃圾回收机制无法回收这些元素。
+
+2. 意外行为： 如果监听器没有被移除，在组件销毁后这些监听器可能会继续响应事件，这可能导致应用程序的意外行为或错误。
+
+3. 性能问题： 随着时间的推移，未移除的事件监听器会堆积，导致性能下降，尤其是在频繁创建和销毁组件的情况下。
+
+在 Vue 组件中，可以利用生命周期钩子来添加和移除事件监听器：
+
+```js showLineNumbers title="测试代码"
+<template>
+  <div ref="myElement">点击我</div>
+</template>
+
+<script>
+export default {
+  mounted() {
+    // 在组件挂载时添加事件监听器
+    this.$refs.myElement.addEventListener('click', this.handleClick);
+  },
+  beforeDestroy() {
+    // 在组件销毁前移除事件监听器
+    this.$refs.myElement.removeEventListener('click', this.handleClick);
+  },
+  methods: {
+    handleClick(event) {
+      console.log('元素被点击了');
+    }
+  }
+};
+</script>
+```
+
+## 24.Vue 中，created 和 mounted 两个钩子之间调用时间差值受什么影响？
+
+它们之间的时间差值主要受以下几个因素的影响：
+
+1.  模板编译时间：
+
+当实例被创建时，Vue 会编译模板（或将模板转换为渲染函数），这个过程在 created 钩子之前完成。如果模板非常复杂或包含大量指令、组件，这个过程会更耗时，从而延长 created 和 mounted 之间的时间差。
+
+2. 虚拟 DOM 渲染时间：
+
+在 mounted 钩子调用之前，Vue 会将虚拟 DOM 渲染为实际的 DOM 元素。渲染复杂的组件树或处理大量数据绑定会增加这段时间。
+
+3. 异步操作：
+
+如果在 created 钩子中发起了异步操作（如 API 请求），这些操作本身不会直接影响 created 和 mounted 的时间差，但如果这些操作涉及数据更新，可能会间接增加挂载时间。
+
+4. 浏览器性能：
+
+浏览器的性能和设备的硬件配置也会影响模板编译和 DOM 渲染的速度，从而影响这两个钩子之间的时间差。
+
+5. 其他钩子执行时间：
+
+在 beforeCreate、created、beforeMount 等钩子中执行的代码也会影响到 mounted 钩子的触发时间。如果这些钩子中有大量计算或耗时操作，也会增加时间差。

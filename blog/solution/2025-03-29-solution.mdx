@@ -1,0 +1,154 @@
+---
+title: 今日总结-2025-03-29
+authors: qjz
+tags: [solution]
+---
+
+## webpack 前端优化方案
+
+- 压缩 JS
+
+```js showLineNumbers title="测试代码"
+const TerserPlugin = require('terser-webpack-plugin')
+
+module.exports = {
+  optimization: {
+    // 开启压缩
+    minimize: true, // 压缩⼯具
+    minimizer: [new TerserPlugin({})]
+  }
+}
+```
+
+- 压缩 css
+
+```js showLineNumbers title="测试代码"
+const MiniCssExtractPlugin = require('mini-css-extract-plugin')
+const CssMinimizerPlugin = require('css-minimizer-webpack-plugin')
+
+module.exports = {
+  module: {
+    rules: [
+      {
+        test: /\.css$/,
+        use: [
+          // 提取成单独的⽂件
+          MiniCssExtractPlugin.loader,
+          'css-loader'
+        ],
+        exclude: /node_modules/
+      }
+    ]
+  },
+  plugins: [
+    new MiniCssExtractPlugin({
+      // 定义输出⽂件名和⽬录
+      filename: 'asset/css/main.css'
+    })
+  ],
+  optimization: {
+    minimize: true,
+    minimizer: [
+      // 压缩 cssnew CssMinimizerPlugin({}),
+    ]
+  }
+}
+```
+
+- 压缩 html
+
+```js showLineNumbers title="测试代码"
+module.export = {
+  plugins: [
+    new HtmlWebpackPlugin({
+      // 动态⽣成 html ⽂件
+      template: './index.html',
+      minify: {
+        // 压缩HTML
+        removeComments: true, // 移除HTML中的注释
+        collapseWhitespace: true, // 删除空⽩符与换⾏符
+        minifyCSS: true // 压缩内联css
+      }
+    })
+  ]
+}
+```
+
+- 压缩图片
+
+```js showLineNumbers title="测试代码"
+module.exports = {
+  module: {
+    rules: [
+      {
+        test: /\.(png|jpg|gif|jpeg|webp|svg)$/,
+        use: [
+          'file-loader',
+          {
+            loader: 'image-webpack-loader',
+            options: {
+              mozjpeg: {
+                progressive: true
+              },
+              optipng: {
+                enabled: false
+              },
+              pngquant: {
+                quality: [0.65, 0.9],
+                speed: 4
+              },
+              gifsicle: {
+                interlaced: false
+              }
+            }
+          }
+        ],
+        exclude: /node_modules/ //排除 node_modules ⽬录
+      }
+    ]
+  }
+}
+```
+
+- 代码分割
+
+```js showLineNumbers title="测试代码"
+
+```
+
+- 作用域提升
+
+```js showLineNumbers title="测试代码"
+module.exports = {
+  //⽅式1
+  mode: 'production',
+  //⽅式2
+  plugins: [
+    // 开启 Scope Hoisting 功能new
+    webpack.optimize.ModuleConcatenationPlugin()
+  ]
+}
+```
+
+- Gzip
+
+```js showLineNumbers title="测试代码"
+const CompressionWebpackPlugin = require('compression-webpack-plugin')
+module.exports = {
+  plugins: [new CompressionWebpackPlugin()]
+}
+```
+
+- treeshaking
+
+```js showLineNumbers title="测试代码"
+const path = require('path')
+const PurgecssPlugin = require('purgecss-webpack-plugin')
+const glob = require('glob') // ⽂件匹配模式module.exports = {//...
+plugins: [
+  ...new PurgeCSSPlugin({
+    paths: glob.sync(`${PATH.src}/**/*`, { nodir: true })
+  })
+  // Add your plugins here// Learn more about plugins from https://webpack.js.org/configuration/plugins/
+]
+```

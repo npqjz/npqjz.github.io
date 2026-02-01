@@ -14,3 +14,19 @@ hola:
   label: Hola
   permalink: /hola
   description: Hola tag description
+math:
+  label: Math
+  permalink: /math
+  description: 数学
+politics:
+  label: Politics
+  permalink: /politics
+  description: 政治
+computer:
+  label: Computer
+  permalink: /computer
+  description: 计算机
+solution:
+  label: Solution
+  permalink: /solution
+  description: 总结

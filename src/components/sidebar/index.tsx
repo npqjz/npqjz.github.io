@@ -1,6 +1,5 @@
 import { FC, memo, ReactNode, useEffect, useRef } from 'react'
 import { SidebarWrapper } from './style'
-import createModule from '@site/.JS/main'
 import { Button, List, Switch } from '@arco-design/web-react'
 import { move } from '@site/src/utils/animation/move'
 import { ListHandle } from '@arco-design/web-react/es/List/interface'

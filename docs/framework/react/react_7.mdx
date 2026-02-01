@@ -1,0 +1,340 @@
+# 题目 41 - 题目 48
+
+## 41. 说说你对 dangerouslySetInnerHTML 的理解
+
+dangerouslySetInnerHTML 是一个属性，你可以在 React 应用程序中的 HTML 元素上使用，以编程方式设置其内容。你可以直接在元素上使用这个属性，而不是使用选择器来抓取 HTML 元素，然后设置其 innerHTML 。
+
+当使用 dangerouslySetInnerHTML ，React 也知道该特定元素的内容是动态的，对于该节点的子节点，它只是跳过与虚拟 DOM 的比较，以获得一些额外的性能。
+
+考虑一下下面的代码片段，它将在不知道其中的`<b> `标签的情况下渲染字符串--意味着输出的只是字符串本身，没有任何粗体字，就像这样：lorem ipsum。
+
+```js showLineNumbers title="测试代码"
+const App = () => {
+  const data = 'lorem <b>ipsum</b>'
+
+  return <div>{data}</div>
+}
+
+export default App
+```
+
+但当使用 dangerouslySetInnerHTML ，React 就会意识到 HTML 标签，并正确渲染它们。这一次，输出将以粗体文本正确呈现（即 loremipsum）。
+
+```js showLineNumbers title="测试代码"
+const App = () => {
+  const data = 'lorem <b>ipsum</b>'
+
+  return <div dangerouslySetInnerHTML={{ __html: data }} />
+}
+
+export default App
+```
+
+```js showLineNumbers title="可使用DOMPurify库进行HTML清理"
+Original
+lorem <b onmouseover="alert('mouseover');">ipsum</b>
+
+Sanitized
+lorem <b>ipsum</b>
+```
+
+```js showLineNumbers title="测试代码"
+import DOMPurify from 'dompurify'
+
+const App = () => {
+  const data = `lorem <b onmouseover="alert('mouseover');">ipsum</b>`
+  const sanitizedData = () => ({
+    __html: DOMPurify.sanitize(data)
+  })
+
+  return <div dangerouslySetInnerHTML={sanitizedData()} />
+}
+
+export default App
+```
+
+## 42.如何让 useEffect 支持 async/await？
+
+做法一：创建一个异步函数（async...await 的方式），然后执行该函数。
+
+```js showLineNumbers title="测试代码"
+useEffect(() => {
+  const asyncFun = async () => {
+    setPass(await mockCheck())
+  }
+  asyncFun()
+}, [])
+```
+
+做法二：也可以使用 IIFE，如下所示：
+
+```js showLineNumbers title="测试代码"
+useEffect(() => {
+  ;(async () => {
+    setPass(await mockCheck())
+  })()
+}, [])
+```
+
+使用 useCallback 与 useEffect 组合:
+
+```js showLineNumbers title="测试代码"
+const memoizedFetchData = useCallback(async () => {
+  const data = await fetchSomeData()
+  // 使用 data 进行其他操作
+}, [])
+
+useEffect(() => {
+  memoizedFetchData()
+
+  // 返回清理函数
+  return () => {
+    // 清理逻辑
+  }
+}, [memoizedFetchData])
+```
+
+使用 Promise 链：
+
+```js showLineNumbers title="测试代码"
+useEffect(() => {
+  let isSubscribed = true
+
+  fetchSomeData()
+    .then(data => {
+      if (isSubscribed) {
+        // 使用 data 进行其他操作
+      }
+    })
+    .catch(error => {
+      if (isSubscribed) {
+        // 处理错误
+      }
+    })
+
+  return () => {
+    isSubscribed = false
+    // 清理逻辑
+  }
+}, [])
+```
+
+## 43.说说你对自定义 hook 的理解
+
+### 自定义 Hook
+
+通过自定义 Hook，可以将组件逻辑提取到可重用的函数中。
+
+可以理解成 Hook 就是用来放一些重复代码的函数。
+
+下面我将做手动实现一个列表渲染、删除的组件，然后把它做成自定义 Hook。
+
+```js showLineNumbers title="测试代码"
+const useList = initialState => {
+  const [state, setState] = useState(initialState)
+  const deleteLi = index => {
+    setState(state => {
+      const newState = JSON.parse(JSON.stringify(state))
+      newState.splice(index, 1)
+      return newState
+    })
+  }
+  return { state, setState, deleteLi } //返回查、改、删
+}
+```
+
+所谓的自定义 Hook，实际上就是把很多重复的逻辑都放在一个函数里面，通过闭包的方式给 return 出来，这是非常高级的方式，程序员崇尚代码简洁，如果说以后业务开发时需要大量的重复代码，我们就可以将它封装成自定义 Hook。
+
+## 44.为什么不能在循环、条件或嵌套函数中调用 Hooks？
+
+React Hooks 有一些使用规则,其中一个重要的规则就是不能在循环、条件或嵌套函数中调用 Hooks。这是因为 Hooks 依赖于 React 的执行顺序,违反这个规则会导致一些问题。
+
+具体来说,不能在循环、条件或嵌套函数中调用 Hooks 的原因如下:
+
+1. 保证 Hooks 的调用顺序
+
+   - Hooks 的工作原理是根据组件函数的执行顺序来确定 Hooks 的调用顺序。如果在循环或条件中调用 Hooks,那么 Hooks 的调用顺序就会因为条件或循环的不同而发生变化,这可能会导致 React 无法正确地追踪 Hooks 的状态。
+
+2. 避免 Hooks 状态混淆
+
+   - 每个 Hooks 调用都有自己的状态和副作用。如果在循环或条件中调用 Hooks,那么这些状态和副作用就可能会相互干扰,导致 Hooks 状态混乱。
+
+3. 保持组件的一致性
+
+   - React 要求组件函数在每次渲染时都以相同的方式执行。如果在循环或条件中调用 Hooks,那么组件函数的执行顺序就会发生变化,这违背了 React 的设计原则。
+
+为了遵守 Hooks 的使用规则,我们需要确保 Hooks 的调用位置是固定的,不会因为循环或条件而发生变化。通常,我们将 Hooks 的调用放在组件函数的最顶层,而不是放在循环或条件语句中。
+
+如果你确实需要在循环或条件中使用 Hooks,可以考虑将这部分逻辑封装到一个单独的自定义 Hook 中,然后在组件中调用这个自定义 Hook。这样可以确保 Hooks 的调用顺序始终保持一致。
+
+遵守 Hooks 的使用规则,可以确保 React 正确地追踪和管理 Hooks 的状态和副作用,从而保证应用的稳定性和可维护性。这是 React Hooks 设计的一个重要考虑因素。
+
+```js showLineNumbers title="测试代码"
+    let mounted = false;
+
+    if(!mounted){
+        // eslint-disable-next-line
+        const [name,setName] = useState('leo');
+        const [age,setAge] = useState(18);
+        mounted = true;
+    }
+    const [career,setCareer] = useState('码农');
+    console.log('career',career);
+    ......
+
+    <div onClick={()=>setName('Lily')}>
+    点我点我点我
+    <div>
+```
+
+点击 div 后，我们期望的输出是 "码农"，然而事实上(尽管会 error，但是打印还是执行)打印的为 "Lily"
+
+原因是，三个 useState 在初始化的时候已经构建好了一个三个节点的链表结构，依次为： name('leo') --> age(18) --> career('码农')
+
+每个节点都已经派发了一个与之对应的 update 操作，因此执行 setName 时候，三个节点就修改为了 name('Lily') --> age(18) --> career('码农')
+
+然后执行 update 渲染操作，从链表依次取出值，此时，条件语句的不再执行，第一个取值操作会从链表的第一个，也就是 name 对应的 hooks 对象进行取值：此时取到的为 name:Lily
+
+必须按照顺序调用从根本上来说是因为 useState 这个钩子在设计层面并没有“状态命名”这个动作，也就是说你每生成一个新的状态，React 并不知道这个状态名字叫啥，所以需要通过顺序来索引到对应的状态值
+
+## 45.react 中，父子组件的生命周期执行顺序是怎么样的？
+
+一、挂载卸载过程
+
+1. constructor，完成了 React 数据的初始化；
+
+2. componentWillMount，组件初始化数据后，但是还未渲染 DOM 前；
+
+3. componentDidMount，组件第一次渲染完成，此时 dom 节点已经生成；
+
+4. componentWillUnmount，组件的卸载和数据的销毁。
+
+二、更新过程
+
+1. componentWillReceiveProps (nextProps)，父组件改变后的 props 需要重新渲染组件时；
+
+2. shouldComponentUpdate(nextProps,nextState)，主要用于性能优化(部分更新)，因为 react 父组件的重新渲染会导致其所有子组件的重新渲染，这个时候其实我们是不需要所有子组件都跟着重新渲染的，在这里 return false 可以阻止组件的更新；
+
+3. componentWillUpdate (nextProps,nextState)，shouldComponentUpdate 返回 true 后，组件进入重新渲染的流程；
+
+4. componentDidUpdate(prevProps,prevState)，组件更新完毕后触发；
+
+三、父子组件加载顺序
+
+观察父子组件的挂载生命周期函数，可以发现挂载时，子组件的挂载钩子先被触发；卸载时，子组件的卸载钩子后被触发。
+
+我们经常在挂载函数上注册监听器，说明此时是可以与页面交互的，也就是说其实所有挂载钩子都是在父组件实际挂载到 dom 树上才触发的，不过是在父组件挂载后依次触发子组件的 componentDidmount ，最后再触发自身的挂载钩子，说白了，componentDidMount 其实是异步钩子。
+
+相反，卸载的时候父节点先被移除，再从上至下依次触发子组件的卸载钩子；
+
+但是我们也经常在卸载钩子上卸载监听器，这说明 componentWillUnmount 其实在父组件从 dom 树上卸载前触发的，先触发自身的卸载钩子，但此时并未从 dom 树上剥离，然后依次尝试触发所有子组件的卸载钩子，最后，父组件从 dom 树上完成实际卸载。
+
+## 46.说说 React 事件和原生事件的执行顺序
+
+1. 事件传播阶段
+
+   - 当一个事件发生时,事件会首先在 DOM 树的根节点开始捕获,然后一路向下传播到目标元素(事件源)。这个过程称为"捕获阶段"。
+   - 到达目标元素后,事件会开始在 DOM 树向上冒泡,这个过程称为"冒泡阶段"。
+
+2. React 事件系统
+
+   - React 事件系统完全模拟了 DOM 事件的传播机制,包括捕获阶段和冒泡阶段。
+   - 当一个 React 事件被触发时,它会先在 React 合成事件系统中进行捕获和冒泡,然后再传播到原生 DOM 事件。
+
+3. 事件执行顺序
+
+   - 当一个 React 事件被触发时,它的执行顺序如下:
+     - React 事件捕获阶段
+     - 原生 DOM 事件捕获阶段
+     - 原生 DOM 事件处理程序
+     - React 事件冒泡阶段
+   - 也就是说,React 事件会先于原生 DOM 事件执行。
+
+4. 阻止事件传播
+
+   - 在 React 事件处理程序中,可以使用 event.stopPropagation() 来阻止事件继续向上冒泡。
+   - 在原生 DOM 事件处理程序中,可以使用 event.stopPropagation() 来阻止事件继续传播。
+
+## 47.下面函数组件的输出分别是什么？
+
+下面是一个简单的函数组件，有两个按钮：“alert”、“add”。
+
+如果先点击“alert”按钮，再点击一次“add”按钮，那么弹窗框中的值和页面中展示 value 分别是什么？
+
+```js showLineNumbers title="测试代码"
+const FunctionComponent = () => {
+  const [value, setValue] = useState(1)
+
+  const log = () => {
+    setTimeout(() => {
+      alert(value)
+    }, 3000)
+  }
+
+  return (
+    <div>
+      <p>FunctionComponent</p>
+      <div>value: {value}</div>
+      <button onClick={log}>alert</button>
+      <button onClick={() => setValue(value + 1)}>add</button>
+    </div>
+  )
+}
+```
+
+弹出的值是 1，页面显示的值是 2
+
+我们发现弹出的值和当前页面显示的值不相同。
+
+换句话说：log 方法内的 value 和点击动作触发那一刻的 value 相同，value 的后续变化不会对 log 方法内的 value 造成影响。
+
+这种现象被称为“闭包陷阱”或者被叫做“Capture Value” ：函数式组件每次 render 都会生产一个新的 log 函数，这个新的 log 函数会产生一个在当前这个阶段 value 值的闭包。
+
+上面例子 “闭包陷阱” 的分析：
+
+1. 初始次渲染，生成一个 log 函数（value = 1）
+2. value 为 1 时，点击 alert 按钮执行 log 函数（value = 1）
+3. 点击按钮增加 value，比如 value 增加到 6，组件 render ，生成一个新的 log 函数（value = 6）
+4. 计时器触发，log 函数（value = 1）弹出闭包内的 value 为 1
+
+如何让弹窗中展示最新的 value 值呢？
+
+```js showLineNumbers title="利用useRef解决闭包陷阱"
+const FunctionComponent = () => {
+  const [value, setValue] = useState(1)
+  const countRef = useRef(value)
+
+  const log = () => {
+    setTimeout(() => {
+      alert(countRef.current)
+    }, 3000)
+  }
+
+  useEffect(() => {
+    countRef.current = value
+  }, [value])
+
+  return (
+    <div>
+      <p>FunctionComponent</p>
+      <div>value: {value}</div>
+      <button onClick={log}>alert</button>
+      <button onClick={() => setValue(value + 1)}>add</button>
+    </div>
+  )
+}
+```
+
+## 48.React 中怎么实现状态自动保存（KeepAlive）？
+
+通过路由实现自动状态保存（通常使用 react-router）
+
+既然 React 中状态的丢失是由于路由切换时卸载了组件引起的，那可以尝试从路由机制上去入手，改变路由对组件的渲染行为
+
+我们有以下的方式去实现这个功能：
+
+- 重写 `<Route>` 组件，可参考 react-live-route。重写可以实现我们想要的功能，但成本也比较高，需要注意对原始` <Route>` 功能的保存，以及多个 react-router 版本的兼容
+- 重写路由库，可参考 react-keeper 。重写路由库成本是一般开发者无法承受的，且完全替换掉路由方案是一个风险较大的事情，需要较为慎重地考虑。
+- 基于 `<Route>` 组件现有行为做拓展，可参考 react-router-cache-route 。在阅读了 `<Route>` 的源码后发现，如果使用 component 或者 render 属性，都无法避免路由在不匹配时被卸载掉的命运。但将 children 属性当作方法来使用，我们就有手动控制渲染的行为的可能。
+
+上面几种方案，主要通过路由入手实现自动状态保存的可能，但终究不是真实的、纯粹的 KeepAlive 功能。

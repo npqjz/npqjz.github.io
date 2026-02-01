@@ -1,0 +1,188 @@
+---
+title: 今日总结-2025-03-16
+authors: qjz
+tags: [solution]
+---
+
+## 在执行 npm install 命令时，默认情况下不会安装 devDependencies 中声明的依赖模块。这是因为 devDependencies 中的模块主要用于项目开发阶段，而不是生产环境。
+
+## 闭包问题
+
+```js showLineNumbers title="测试代码"
+function log(t) {
+  console.log(t)
+}
+
+const ary = [1, 2, 3]
+let s = 0
+
+ary.forEach(function aryCallBack(i) {
+  log(i)
+  s += i
+})
+```
+
+- s: 用于累加计算,在回调函数中被引用和修改
+- log: 作为函数在回调函数中被调用
+
+这两个变量都来自外部作用域,并在内部函数中被使用,因此都会被保存在闭包环境中
+
+## 转义字符
+
+```js showLineNumbers title="测试代码"
+$.post({
+  api: '/api/createComments',
+  data: {
+    content: '&lt;script&gt;while(true){}&lt;&#x2F;script&gt;'
+  }
+})
+```
+
+这段代码不存在安全问题，因为发送的内容中的特殊字符已经被转义处理了。
+
+## css 中的特异性
+
+```js showLineNumbers title="测试代码"
+<style>
+  :is(.box) h1 {
+     color: red;
+  }
+  :where(#box) h1 {
+    color: green;
+  }
+  div h1 {
+    color: yellow;
+  }
+</style>
+
+<div class="box" id="box">
+  <h1>知乎</h1>
+</div>
+```
+
+1. :is()和:where()的主要区别在于特异性计算方式:
+
+- :is() 会采用其括号内最高的特异性
+- :where() 的特异性永远为 0
+
+2. 具体分析各选择器的特异性:
+
+- :is(.box) h1: 类选择器(.box)的特异性为(0,1,0)
+- :where(#box) h1: 特异性为(0,0,0)，因为:where()将特异性重置为 0
+- div h1: 标签选择器的特异性为(0,0,2)
+
+## css 的 rel 属性
+
+当前页面使用了同源的 web 字体，使用`<link rel="preload" href="xx/yy.woff2" .../>`
+
+- preload 指令可以让浏览器提前加载指定资源,不需要等到解析到相应位置才开始加载,
+
+- prefetch 是一种低优先级的资源预加载方式,通常用于加载其他页面可能会用到的资源,不适合加载当前页面的必需资源。
+
+- preconnect 用于提前建立与服务器的连接,包括 DNS 查找、TCP 握手和 TLS 协商,但不会下载资源本身,对于同源资源没有明显优势。
+
+- prerender 用于预先渲染整个页面,对单个字体文件的加载没有帮助,而且资源消耗较大。
+
+## web 页面的背景颜色设置
+
+```js showLineNumbers title="测试代码"
+<body bgcolor="color-name">
+```
+
+## 表达式真假
+
+```js showLineNumbers title="测试代码"
+null == null // true
+[] === [] [] == [] [] == true //false
+'' == null //false
+[] == '' ![] == '' //true
+null == undefined //true
+null === undefined //false
+NaN == NaN // false
+```
+
+## 负载均衡算法
+
+常用的负载均衡算法有随机法、轮询法、加权轮询法、加权随机法、源地址哈希法、最小连接数法
+
+## 对象遍历数字键属性(按照升序排列)
+
+```js showLineNumbers title="测试代码"
+const obj = { 2: 1, '': 1, 0: 1, 1: 1 }
+const keys = Object.keys(obj)
+console.log(keys) // ['0', '1', '2', '']
+```
+
+## const 声明
+
+```js showLineNumbers title="测试代码"
+const a = 10
+const obj = {
+  a: 20,
+  console: () => {
+    var a = 30
+    console.log(this.a)
+  }
+}
+obj.console() // undefined，const声明不会绑定到window中
+```
+
+## 以下标签定义文档的标题，它是 head 部分中唯一必需的元素的是 title
+
+## `<textarea style="display:none;"> <img src="pic.jpg" style="visibility:hidden" alt="my home"></ textarea>`不会触发 http 请求
+
+textarea 下子元素均为文本
+
+## 变量与属性
+
+```js showLineNumbers title="测试代码"
+var x = 1,
+  y = 2
+var z = function () {
+  var x = 2
+  return {
+    x: x,
+    y: function (a, b) {
+      x = a + b // 此处的x为局部变量
+    },
+    z: function () {
+      return x // 此处的x为局部变量
+    }
+  }
+}
+var a = z()
+a.y(x, y)
+console.log(a.z(), a.x, x) //3，2，1
+```
+
+## this 指向与 var 变量提升
+
+```js showLineNumbers title="测试代码"
+var bar = 1
+function test() {
+  console.log(bar) // undefined
+  var bar = 2
+  console.log(bar) // 2
+}
+test()
+function foo() {
+  console.log(this.a) // 1，this === window
+}
+var a = 1
+foo()
+var obj = {
+  a: 2,
+  foo: foo
+}
+obj.foo() // 2，this === obj
+```
+
+## new 操作符的流程
+
+1. 创建一个新对象
+
+2. 将构造函数的作用域赋给新对象(因此 this 指向了这个新对象)
+
+3. 执行构造函数中的代码(此处添加属性和方法)
+
+4. 返回新对象
